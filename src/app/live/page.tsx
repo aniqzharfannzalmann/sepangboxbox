@@ -8,6 +8,7 @@ import {
   Container,
   Hairline,
   SectionLabel,
+  SpecCell,
 } from "@/components/ui/primitives";
 import { getTimingSource } from "@/lib/f1/sources";
 import { MYT_LABEL, formatFullMyt } from "@/lib/f1/time";
@@ -30,12 +31,13 @@ export const metadata = {
 export default async function LivePage() {
   const source = getTimingSource();
 
-  const [state, rows, stints, pitLog, raceControl] = await Promise.all([
+  const [state, rows, stints, pitLog, raceControl, weather] = await Promise.all([
     source.getSessionState(),
     source.getTimingRows(),
     source.getStints(),
     source.getPitLog(),
     source.getRaceControl(),
+    source.getWeather(),
   ]);
 
   // The source resolved "now" once when it built the session state, and
@@ -203,6 +205,36 @@ export default async function LivePage() {
           />
         )}
       </div>
+
+      {weather && (
+        <section className="mt-xxl">
+          <SectionLabel>Track conditions</SectionLabel>
+          <div className="flex flex-wrap gap-lg mt-xs">
+            {weather.airTempC !== null && (
+              <SpecCell value={`${weather.airTempC.toFixed(0)}°`} label="Air" />
+            )}
+            {weather.trackTempC !== null && (
+              <SpecCell
+                value={`${weather.trackTempC.toFixed(0)}°`}
+                label="Track"
+              />
+            )}
+            {weather.humidityPct !== null && (
+              <SpecCell
+                value={`${weather.humidityPct.toFixed(0)}%`}
+                label="Humidity"
+              />
+            )}
+            {weather.rainfall !== null && (
+              <SpecCell
+                value={weather.rainfall ? "Wet" : "Dry"}
+                label="Rainfall"
+                accent={weather.rainfall}
+              />
+            )}
+          </div>
+        </section>
+      )}
 
       {state.next && state.status !== "before" && (
         <div className="mt-xxl">

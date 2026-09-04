@@ -4,6 +4,8 @@ import type {
   Constructor,
   ConstructorStanding,
   Driver,
+  DriverRaceEntry,
+  DriverSeasonStats,
   DriverStanding,
   F1Session,
   QualifyingResult,
@@ -112,6 +114,10 @@ interface WireRace {
   QualifyingResults?: WireQualifyingResult[];
 }
 
+interface WireDriverList {
+  Drivers: WireDriver[];
+}
+
 interface WireResult {
   position: string;
   positionText: string;
@@ -152,6 +158,7 @@ interface WireConstructorStanding {
 interface MRData {
   MRData: {
     RaceTable?: { season: string; Races: WireRace[] };
+    DriverTable?: WireDriverList;
     StandingsTable?: {
       season: string;
       round?: string;
@@ -399,5 +406,70 @@ export async function getQualifyingResult(
     round: race.round,
     raceName: race.raceName,
     rows,
+  };
+}
+
+/**
+ * Every classified and unclassified finish for one driver this season.
+ *
+ * One request per driver, not one per round — the season endpoint filtered by
+ * driver returns all of them at once, which keeps /compare at two requests
+ * regardless of how far into the season it is.
+ */
+export async function getDriverSeasonResults(
+  season: string,
+  driverId: string,
+): Promise<DriverRaceEntry[]> {
+  const json = await get(`/${season}/drivers/${driverId}/results.json?limit=100`);
+  const races = json.MRData.RaceTable?.Races ?? [];
+
+  return races.flatMap((race) => {
+    const result = race.Results?.[0];
+    if (!result) return [];
+    const classified = /^\d+$/.test(result.positionText);
+    return [
+      {
+        round: race.round,
+        raceName: race.raceName,
+        position: classified ? Number(result.position) : null,
+        positionText: result.positionText,
+        points: Number(result.points),
+        gridPosition: Number(result.grid),
+        status: result.status,
+        classified,
+      },
+    ];
+  });
+}
+
+const mean = (values: number[]): number | null =>
+  values.length === 0
+    ? null
+    : values.reduce((sum, v) => sum + v, 0) / values.length;
+
+export function summariseDriverSeason(
+  driver: Driver,
+  constructorNames: string[],
+  entries: DriverRaceEntry[],
+): DriverSeasonStats {
+  const finishes = entries
+    .filter((e) => e.classified && e.position !== null)
+    .map((e) => e.position as number);
+
+  // Grid position 0 means a pit lane start in Ergast, which is not a grid slot.
+  const grids = entries.map((e) => e.gridPosition).filter((g) => g > 0);
+
+  return {
+    driver,
+    constructorNames,
+    racesEntered: entries.length,
+    points: entries.reduce((sum, e) => sum + e.points, 0),
+    wins: finishes.filter((p) => p === 1).length,
+    podiums: finishes.filter((p) => p <= 3).length,
+    pointsFinishes: entries.filter((e) => e.points > 0).length,
+    dnfs: entries.filter((e) => !e.classified).length,
+    bestFinish: finishes.length ? Math.min(...finishes) : null,
+    averageFinish: mean(finishes),
+    averageGrid: mean(grids),
   };
 }

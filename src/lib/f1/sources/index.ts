@@ -1,6 +1,7 @@
 import "server-only";
 
 import { JolpicaTimingSource } from "./jolpica.source";
+import { OpenF1TimingSource } from "./openf1.source";
 import type { LiveTimingSource } from "./types";
 
 /**
@@ -16,7 +17,8 @@ import type { LiveTimingSource } from "./types";
  * historical ones. There is nothing to degrade to.
  */
 export function getTimingSource(): LiveTimingSource {
-  // Phase 5: when OPENF1_API_KEY is set, return new OpenF1TimingSource(key).
+  const key = process.env.OPENF1_API_KEY;
+  if (key) return new OpenF1TimingSource(key);
   return new JolpicaTimingSource();
 }
 

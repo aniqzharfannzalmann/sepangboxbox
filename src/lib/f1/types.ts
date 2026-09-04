@@ -129,6 +129,38 @@ export interface QualifyingResult {
   rows: QualifyingRow[];
 }
 
+/** One driver's finish in one round, for season aggregates. */
+export interface DriverRaceEntry {
+  round: string;
+  raceName: string;
+  position: number | null;
+  positionText: string;
+  points: number;
+  gridPosition: number;
+  status: string;
+  classified: boolean;
+}
+
+export interface DriverSeasonStats {
+  driver: Driver;
+  constructorNames: string[];
+  racesEntered: number;
+  points: number;
+  wins: number;
+  podiums: number;
+  pointsFinishes: number;
+  dnfs: number;
+  bestFinish: number | null;
+  /**
+   * Mean finishing position across classified finishes only. Retirements are
+   * excluded rather than counted as last — averaging them in would punish a
+   * driver for a mechanical failure, and the UI states the exclusion so the
+   * number is not read as something it is not.
+   */
+  averageFinish: number | null;
+  averageGrid: number | null;
+}
+
 /* ------------------------------------------------------------------ */
 /* Live timing                                                         */
 /* ------------------------------------------------------------------ */
