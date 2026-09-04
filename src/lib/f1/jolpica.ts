@@ -6,6 +6,8 @@ import type {
   Driver,
   DriverStanding,
   F1Session,
+  QualifyingResult,
+  QualifyingRow,
   RaceResult,
   RaceResultRow,
   RaceWeekend,
@@ -107,6 +109,7 @@ interface WireRace {
   Sprint?: WireDateTime;
   Qualifying?: WireDateTime;
   Results?: WireResult[];
+  QualifyingResults?: WireQualifyingResult[];
 }
 
 interface WireResult {
@@ -120,6 +123,15 @@ interface WireResult {
   Constructor: WireConstructor;
   Time?: { time: string };
   FastestLap?: { Time?: { time: string } };
+}
+
+interface WireQualifyingResult {
+  position: string;
+  Driver: WireDriver;
+  Constructor: WireConstructor;
+  Q1?: string;
+  Q2?: string;
+  Q3?: string;
 }
 
 interface WireDriverStanding {
@@ -361,6 +373,31 @@ export async function getRaceResult(
     raceName: race.raceName,
     circuitName: race.Circuit.circuitName,
     dateIso: toIso({ date: race.date, time: race.time }) ?? race.date,
+    rows,
+  };
+}
+
+export async function getQualifyingResult(
+  season: string,
+  round: string,
+): Promise<QualifyingResult | null> {
+  const json = await get(`/${season}/${round}/qualifying.json?limit=100`);
+  const race = json.MRData.RaceTable?.Races?.[0];
+  if (!race?.QualifyingResults?.length) return null;
+
+  const rows: QualifyingRow[] = race.QualifyingResults.map((q) => ({
+    position: Number(q.position),
+    driver: toDriver(q.Driver),
+    constructor: toConstructor(q.Constructor),
+    q1: q.Q1 || null,
+    q2: q.Q2 || null,
+    q3: q.Q3 || null,
+  })).sort((a, b) => a.position - b.position);
+
+  return {
+    season: race.season,
+    round: race.round,
+    raceName: race.raceName,
     rows,
   };
 }

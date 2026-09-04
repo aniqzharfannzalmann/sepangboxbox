@@ -113,6 +113,117 @@ export interface RaceResult {
   rows: RaceResultRow[];
 }
 
+export interface QualifyingRow {
+  position: number;
+  driver: Driver;
+  constructor: Constructor;
+  q1: string | null;
+  q2: string | null;
+  q3: string | null;
+}
+
+export interface QualifyingResult {
+  season: string;
+  round: string;
+  raceName: string;
+  rows: QualifyingRow[];
+}
+
+/* ------------------------------------------------------------------ */
+/* Live timing                                                         */
+/* ------------------------------------------------------------------ */
+
+export type TyreCompound =
+  | "SOFT"
+  | "MEDIUM"
+  | "HARD"
+  | "INTERMEDIATE"
+  | "WET"
+  | "UNKNOWN";
+
+/**
+ * One car in the timing tower.
+ *
+ * Deliberately wider than any single source can fill. A field a source cannot
+ * supply is null, and the UI reads the source's capabilities to decide whether
+ * to hide that column or say it is unavailable — it never renders a null as a
+ * blank cell and lets the reader assume the data is missing upstream.
+ */
+export interface TimingRow {
+  position: number | null;
+  /** Ergast overloads this ("R", "D", a lap count); shown verbatim. */
+  positionText: string;
+  driver: Driver;
+  constructor: Constructor;
+  /** Leader shows total time; everyone else a gap like "+11.536". */
+  gapToLeader: string | null;
+  gapToAhead: string | null;
+  lastLap: string | null;
+  bestLap: string | null;
+  lapsCompleted: number | null;
+  tyre: TyreCompound | null;
+  stintLaps: number | null;
+  inPit: boolean;
+  /** "Finished", "+1 Lap", "Collision" — free text from the source. */
+  status: string | null;
+  retired: boolean;
+}
+
+export interface Stint {
+  driverId: string;
+  compound: TyreCompound;
+  startLap: number;
+  endLap: number | null;
+}
+
+export interface PitStop {
+  driverId: string;
+  lap: number;
+  /** Stationary time in seconds, when the source reports it. */
+  durationSeconds: number | null;
+  atIso: string | null;
+}
+
+export interface RaceControlMessage {
+  atIso: string;
+  category: string | null;
+  flag: string | null;
+  scope: string | null;
+  message: string;
+}
+
+export interface Weather {
+  airTempC: number | null;
+  trackTempC: number | null;
+  humidityPct: number | null;
+  rainfall: boolean | null;
+  atIso: string | null;
+}
+
+/**
+ * How close to the real thing the numbers on screen are.
+ *
+ * "live" is second-by-second timing. "post-session" is a classification
+ * published after the flag — correct, but not live. "unavailable" means
+ * nothing can be shown and the UI must say so.
+ */
+export type Fidelity = "live" | "post-session" | "unavailable";
+
+export interface LiveSessionState {
+  weekend: RaceWeekend;
+  /** Running session, or the most recent one once the weekend is under way. */
+  session: F1Session | null;
+  /** The next session that has not started, when there is one. */
+  next: F1Session | null;
+  status: "before" | "live" | "between" | "finished";
+  /**
+   * True between the chequered flag and official classification, when
+   * positions can still change on appeal or penalty (PRD 10.2). The UI must
+   * label the table provisional while this holds.
+   */
+  provisional: boolean;
+}
+
 /* ------------------------------------------------------------------ */
 /* Data provenance                                                     */
 /* ------------------------------------------------------------------ */

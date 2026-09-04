@@ -69,8 +69,26 @@ function Hero({
           </StatusNotice>
         )}
 
+        {/*
+          Once the weekend is under way, timing is what people came for and it
+          takes the primary CTA. Before that, the schedule is the useful thing.
+        */}
         <div className="flex flex-wrap gap-xs mt-xl">
-          <Button href="/schedule">Full schedule</Button>
+          {state.status === "before" ? (
+            <>
+              <Button href="/schedule">Full schedule</Button>
+              <Button href="/live" variant="outline-on-dark">
+                Live timing
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button href="/live">Live timing</Button>
+              <Button href="/schedule" variant="outline-on-dark">
+                Full schedule
+              </Button>
+            </>
+          )}
           <Button href="/standings" variant="outline-on-dark">
             Standings
           </Button>

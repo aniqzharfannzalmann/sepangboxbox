@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 import { Container } from "./primitives";
 
 const NAV = [
-  { href: "/", label: "Live" },
+  { href: "/live", label: "Live" },
   { href: "/standings", label: "Standings" },
   { href: "/schedule", label: "Schedule" },
   { href: "/results", label: "Results" },
