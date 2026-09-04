@@ -1,26 +1,212 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Sepang Box Box — design tokens
+ * Single source of truth, translated from docs/design.md.
+ * Never write a hex value inline in a component (design.md §Iteration Guide #4).
+ */
+
+@theme {
+  /* ---- Brand & accent ---------------------------------------------------
+   * Rosso Corsa is used scarcely: primary CTAs, the Cavallino, F1 race-position
+   * highlights. Nothing else earns it.
+   */
+  --color-primary: #da291c;
+  --color-primary-active: #b01e0a;
+  --color-primary-hover: #9d2211;
+  --color-on-primary: #ffffff;
+
+  /* ---- Surface ---------------------------------------------------------
+   * Canvas is near-black (#181818), never pure black — it carries a slight warmth.
+   */
+  --color-canvas: #181818;
+  --color-canvas-elevated: #303030;
+  --color-canvas-light: #ffffff;
+  --color-surface-card: #303030;
+  --color-surface-soft-light: #f7f7f7;
+  --color-surface-strong-light: #ebebeb;
+
+  /* ---- Hairlines ---- */
+  --color-hairline: #303030;
+  --color-hairline-on-light: #d2d2d2;
+  --color-hairline-soft: #ebebeb;
+
+  /* ---- Text ---- */
+  --color-ink: #ffffff;
+  --color-body: #969696;
+  --color-body-strong: #ffffff;
+  --color-body-on-light: #181818;
+  --color-muted: #666666;
+  --color-muted-soft: #8f8f8f;
+
+  /* ---- Semantic ---- */
+  --color-semantic-info: #4c98b9;
+  --color-semantic-success: #03904a;
+  --color-semantic-warning: #f13a2c;
+
+  /* ---- Focus ring ----
+   * The one sanctioned use of the yellow token outside the Hypersail program.
+   */
+  --color-focus: #f6e500;
+
+  /* ---- Spacing ladder ----
+   * Explicit named scale (design.md §Layout). Use these, not ad-hoc px.
+   */
+  --spacing-xxxs: 4px;
+  --spacing-xxs: 8px;
+  --spacing-xs: 16px;
+  --spacing-sm: 24px;
+  --spacing-md: 32px;
+  --spacing-lg: 48px;
+  --spacing-xl: 64px;
+  --spacing-xxl: 96px;
+  --spacing-super: 128px;
+
+  /* ---- Radius ----
+   * Sharp by default. Pill geometry is reserved for badges only.
+   */
+  --radius-none: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* ---- Type ----
+   * FerrariSans is licensed; Inter 500 is the substitute design.md itself names.
+   */
+  --font-sans: var(--font-inter), -apple-system, system-ui, sans-serif;
+
+  --text-display-mega: 80px;
+  --text-display-mega--line-height: 1.05;
+  --text-display-mega--letter-spacing: -1.6px;
+  --text-display-mega--font-weight: 500;
+
+  --text-display-xl: 56px;
+  --text-display-xl--line-height: 1.1;
+  --text-display-xl--letter-spacing: -1.12px;
+  --text-display-xl--font-weight: 500;
+
+  --text-display-lg: 36px;
+  --text-display-lg--line-height: 1.2;
+  --text-display-lg--letter-spacing: -0.36px;
+  --text-display-lg--font-weight: 500;
+
+  --text-display-md: 26px;
+  --text-display-md--line-height: 1.5;
+  --text-display-md--letter-spacing: 0.195px;
+  --text-display-md--font-weight: 500;
+
+  --text-title-md: 18px;
+  --text-title-md--line-height: 1.2;
+  --text-title-md--font-weight: 700;
+
+  --text-title-sm: 16px;
+  --text-title-sm--line-height: 1.4;
+  --text-title-sm--letter-spacing: 0.08px;
+  --text-title-sm--font-weight: 500;
+
+  --text-body-md: 14px;
+  --text-body-md--line-height: 1.5;
+  --text-body-md--font-weight: 400;
+
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 1.5;
+  --text-body-sm--font-weight: 400;
+
+  --text-caption: 12px;
+  --text-caption--line-height: 1.4;
+  --text-caption--font-weight: 400;
+
+  --text-caption-uppercase: 11px;
+  --text-caption-uppercase--line-height: 1.4;
+  --text-caption-uppercase--letter-spacing: 1.1px;
+  --text-caption-uppercase--font-weight: 600;
+
+  --text-button: 14px;
+  --text-button--line-height: 1;
+  --text-button--letter-spacing: 1.4px;
+  --text-button--font-weight: 700;
+
+  --text-nav-link: 13px;
+  --text-nav-link--line-height: 1.4;
+  --text-nav-link--letter-spacing: 0.65px;
+  --text-nav-link--font-weight: 600;
+
+  --text-number-display: 80px;
+  --text-number-display--line-height: 1;
+  --text-number-display--letter-spacing: -1.6px;
+  --text-number-display--font-weight: 700;
+
+  /* ---- Depth ----
+   * Photography + brightness-step carry the depth. One shadow tier, no more.
+   */
+  --shadow-small: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Mobile display sizes. design.md §Responsive: hero h1 80 → 56 → 32px. */
+@layer base {
+  @media (width < 1024px) {
+    :root {
+      --text-display-mega: 56px;
+    }
+  }
+  @media (width < 640px) {
+    :root {
+      --text-display-mega: 32px;
+      --text-display-xl: 32px;
+      --text-number-display: 48px;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  html {
+    background-color: var(--color-canvas);
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    font-size: var(--text-body-md);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Display type never goes bold — the photography does the heavy lifting. */
+  h1,
+  h2,
+  h3 {
+    font-weight: 500;
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
+
+@utility uppercase-cta {
+  text-transform: uppercase;
+  font-size: var(--text-button);
+  font-weight: 700;
+  letter-spacing: var(--text-button--letter-spacing);
+  line-height: 1;
+}
+
+@utility label-caps {
+  text-transform: uppercase;
+  font-size: var(--text-caption-uppercase);
+  font-weight: 600;
+  letter-spacing: var(--text-caption-uppercase--letter-spacing);
+  line-height: 1.4;
+}
+
+/* Tabular figures for every timing/points column — digits must not jitter. */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
