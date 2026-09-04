@@ -59,12 +59,12 @@ export function FooterDark() {
           {COLUMNS.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
               <h2 className="label-caps text-muted">{col.heading}</h2>
-              <ul className="mt-xs flex flex-col gap-xxs">
+              <ul className="mt-xxs flex flex-col">
                 {col.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-body-sm text-body hover:text-ink transition-colors"
+                      className="text-body-sm text-body hover:text-ink transition-colors inline-flex items-center min-h-11"
                       {...("external" in link && link.external
                         ? { target: "_blank", rel: "noopener noreferrer" }
                         : {})}

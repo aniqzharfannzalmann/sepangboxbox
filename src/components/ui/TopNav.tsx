@@ -20,7 +20,7 @@ function Wordmark() {
   return (
     <Link
       href="/"
-      className="flex items-center gap-xxs shrink-0"
+      className="flex items-center gap-xxs shrink-0 min-h-12"
       aria-label="Sepang Box Box — home"
     >
       <span aria-hidden className="block h-6 w-[6px] bg-primary" />
@@ -52,7 +52,10 @@ export function TopNav() {
                 href={item.href}
                 aria-current={isActive(item.href) ? "page" : undefined}
                 className={cn(
-                  "text-nav-link uppercase transition-colors py-xs",
+                  // design.md promises an effective 48px tap area for nav
+                  // items; py alone did not get there.
+                  "text-nav-link uppercase transition-colors",
+                  "inline-flex items-center min-h-12 px-xxs",
                   isActive(item.href)
                     ? "text-ink"
                     : "text-body hover:text-ink",

@@ -36,7 +36,16 @@
   --color-body: #969696;
   --color-body-strong: #ffffff;
   --color-body-on-light: #181818;
-  --color-muted: #666666;
+  /*
+   * design.md specifies #666666 for muted, but that is 3.09:1 against the
+   * canvas and every use of it here is 11-12px caption or label text, which
+   * WCAG AA requires to reach 4.5:1. This value is design.md's own
+   * `muted-soft` and clears it at 5.49:1. People will read this in direct sun
+   * at a circuit, so the accessible value wins over literal fidelity.
+   * #666666 is kept below for anything set large enough to pass with it.
+   */
+  --color-muted: #8f8f8f;
+  --color-muted-dim: #666666;
   --color-muted-soft: #8f8f8f;
 
   /* ---- Semantic ---- */
