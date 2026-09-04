@@ -1,0 +1,42 @@
+{
+  "season": "2026",
+  "round": "16",
+  "raceName": "Bahrain Grand Prix in Malaysia",
+  "circuitId": "sepang",
+  "circuitName": "Sepang International Circuit",
+  "locality": "Kuala Lumpur",
+  "country": "Malaysia",
+  "url": "https://en.wikipedia.org/wiki/2026_Bahrain_Grand_Prix",
+  "sessions": [
+    {
+      "kind": "fp1",
+      "label": "Practice 1",
+      "startsAtIso": "2026-10-02T04:30:00.000Z",
+      "endsAtIso": "2026-10-02T05:30:00.000Z"
+    },
+    {
+      "kind": "fp2",
+      "label": "Practice 2",
+      "startsAtIso": "2026-10-02T08:00:00.000Z",
+      "endsAtIso": "2026-10-02T09:00:00.000Z"
+    },
+    {
+      "kind": "fp3",
+      "label": "Practice 3",
+      "startsAtIso": "2026-10-03T04:30:00.000Z",
+      "endsAtIso": "2026-10-03T05:30:00.000Z"
+    },
+    {
+      "kind": "quali",
+      "label": "Qualifying",
+      "startsAtIso": "2026-10-03T08:00:00.000Z",
+      "endsAtIso": "2026-10-03T09:00:00.000Z"
+    },
+    {
+      "kind": "race",
+      "label": "Race",
+      "startsAtIso": "2026-10-04T07:00:00.000Z",
+      "endsAtIso": "2026-10-04T09:30:00.000Z"
+    }
+  ]
+}
