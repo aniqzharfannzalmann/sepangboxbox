@@ -35,6 +35,16 @@ const BASE = process.env.JOLPICA_BASE_URL ?? "https://api.jolpi.ca/ergast/f1";
  */
 const REVALIDATE_SECONDS = 300;
 
+/**
+ * Shorter window for anything that moves during a session.
+ *
+ * A classification flips from provisional to final within an hour of the
+ * flag, and router.refresh() on the live page re-renders but does not clear
+ * this cache — so with the default 300s the page would refresh for five
+ * minutes and keep showing the same rows.
+ */
+const LIVE_REVALIDATE_SECONDS = 60;
+
 /** The race this app is built around. */
 export const SEPANG = { season: "2026", round: "16" } as const;
 
@@ -187,11 +197,14 @@ export class JolpicaError extends Error {
   }
 }
 
-async function get(path: string): Promise<MRData> {
+async function get(
+  path: string,
+  revalidate: number = REVALIDATE_SECONDS,
+): Promise<MRData> {
   let response: Response;
   try {
     response = await fetch(`${BASE}${path}`, {
-      next: { revalidate: REVALIDATE_SECONDS },
+      next: { revalidate },
       headers: { Accept: "application/json" },
     });
   } catch (cause) {
@@ -357,7 +370,10 @@ export async function getRaceResult(
   season: string,
   round: string,
 ): Promise<RaceResult | null> {
-  const json = await get(`/${season}/${round}/results.json?limit=100`);
+  const json = await get(
+    `/${season}/${round}/results.json?limit=100`,
+    LIVE_REVALIDATE_SECONDS,
+  );
   const race = json.MRData.RaceTable?.Races?.[0];
   if (!race?.Results?.length) return null;
 
@@ -392,7 +408,10 @@ export async function getQualifyingResult(
   season: string,
   round: string,
 ): Promise<QualifyingResult | null> {
-  const json = await get(`/${season}/${round}/qualifying.json?limit=100`);
+  const json = await get(
+    `/${season}/${round}/qualifying.json?limit=100`,
+    LIVE_REVALIDATE_SECONDS,
+  );
   const race = json.MRData.RaceTable?.Races?.[0];
   if (!race?.QualifyingResults?.length) return null;
 

@@ -24,14 +24,30 @@ export const metadata = {
  * they would be exercised for the first time on race day. This route drives
  * the same component with the same source class against real classifications.
  *
- *   /live/preview/12                 the race, as it stands now
- *   /live/preview/12?session=quali   the clock pinned just after qualifying,
- *                                    which also shows the provisional state
+ *   /live/preview/12                        the race, as it stands now
+ *   /live/preview/12?session=quali          clock just after qualifying, which
+ *                                           shows the provisional state
+ *   /live/preview/12?session=quali&at=during clock mid-session, which is the
+ *                                           only way to render the live branch
  *
  * Not indexed, and not linked from the app.
  */
 
-const PREVIEWABLE: SessionKind[] = ["race", "sprint", "quali", "sprint-quali"];
+/*
+ * Practice is included on purpose. Jolpica publishes nothing for it, so
+ * `?session=fp1&at=during` is the only way to render the combination a fan
+ * will actually meet on the Friday at Sepang: a session running, with no rows
+ * to show.
+ */
+const PREVIEWABLE: SessionKind[] = [
+  "fp1",
+  "fp2",
+  "fp3",
+  "race",
+  "sprint",
+  "quali",
+  "sprint-quali",
+];
 
 export default async function LivePreviewPage({
   params,
@@ -45,6 +61,7 @@ export default async function LivePreviewPage({
   const requested = Array.isArray(query.session)
     ? query.session[0]
     : query.session;
+  const at = Array.isArray(query.at) ? query.at[0] : query.at;
 
   // Resolve the weekend up front, whether or not a session was named. Without
   // this an out-of-range round reaches the source and throws a 500 instead of
@@ -62,16 +79,28 @@ export default async function LivePreviewPage({
     if (!PREVIEWABLE.includes(requested as SessionKind)) notFound();
     const session = weekend.sessions.find((s) => s.kind === requested);
     if (!session) notFound();
-    // Pin the clock one minute after that session ended: late enough for a
-    // classification to exist, early enough to still be inside the
-    // provisional window.
-    pin.nowMs = new Date(session.endsAtIso).getTime() + 60_000;
+
+    const startsAt = new Date(session.startsAtIso).getTime();
+    const endsAt = new Date(session.endsAtIso).getTime();
+
+    pin.nowMs =
+      at === "during"
+        ? // Halfway through. The only way to reach status "live", where the
+          // page shows the running badge and says this source publishes
+          // nothing until the flag.
+          startsAt + (endsAt - startsAt) / 2
+        : // One minute after the flag: late enough for a classification to
+          // exist, early enough to still be provisional.
+          endsAt + 60_000;
   }
 
   const notice = (
     <StatusNotice tone="warning" className="mb-lg">
       Preview — round {round}
-      {requested ? `, clock pinned just after ${requested}` : ""}. This is the
+      {requested
+        ? `, clock pinned ${at === "during" ? "mid-" : "just after "}${requested}`
+        : ""}
+      . This is the
       live timing view driven by a completed round, so the table can be checked
       before Sepang runs. Not live data.
     </StatusNotice>

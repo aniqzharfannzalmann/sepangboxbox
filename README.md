@@ -83,14 +83,20 @@ Sepang is round 16 and has not run, so `/live` shows a countdown and the
 timing table never renders. To drive the real view against a completed round:
 
 ```
-/live/preview/12                 the race classification
-/live/preview/12?session=quali   clock pinned just after qualifying, which
-                                 also exercises the provisional state
+/live/preview/12                          race classification
+/live/preview/12?session=quali            just after the flag: provisional
+/live/preview/12?session=quali&at=during  mid-session: the live branch
+/live/preview/12?session=fp1&at=during    running practice with no rows,
+                                          which is what Friday at Sepang looks
+                                          like on the free source
 ```
 
 It renders the same `LiveView` component through the same source class — a
 preview built from different components would prove nothing. Not indexed, and
 not linked from the app.
+
+Between them these cover every state the live page has: before the weekend,
+session running with and without rows, provisional, and finished.
 
 ## Degrading gracefully
 

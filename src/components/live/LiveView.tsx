@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AutoRefresh } from "@/components/live/AutoRefresh";
 import { Countdown } from "@/components/Countdown";
 import { StatusNotice } from "@/components/StatusNotice";
 import { TimingTable } from "@/components/live/TimingTable";
@@ -53,8 +54,25 @@ export async function LiveView({
   const isLive = state.status === "live";
   const sessionLabel = state.session?.label ?? "Session";
 
+  // Practice needs its own wording. Ergast has no practice endpoint at all, so
+  // telling a fan on Friday that results arrive "once the session ends" would
+  // have them waiting for something that is never coming.
+  const isPractice =
+    state.session?.kind === "fp1" ||
+    state.session?.kind === "fp2" ||
+    state.session?.kind === "fp3";
+
+  const emptyReason = isPractice
+    ? `${sessionLabel} timing is not published by this source at any point. Live practice timing needs OpenF1 access.`
+    : isLive
+      ? `${sessionLabel} is running. This source only publishes a classification once the session ends.`
+      : `No classification has been published for ${sessionLabel} yet.`;
+
   return (
     <Container className="py-xxl">
+      {/* Only while something is actually moving — see AutoRefresh. */}
+      {(isLive || state.provisional) && <AutoRefresh />}
+
       {notice}
 
       <div className="flex items-center gap-xxs">
@@ -70,7 +88,7 @@ export async function LiveView({
               : "Live timing"}
         </h1>
         {isLive && <BadgePill tone="warning">Session running</BadgePill>}
-        {state.provisional && !isLive && (
+        {state.provisional && !isLive && rows && rows.length > 0 && (
           <BadgePill tone="info">Provisional</BadgePill>
         )}
       </div>
@@ -95,7 +113,8 @@ export async function LiveView({
           : `Post-session results — ${source.description}`}
       </StatusNotice>
 
-      {state.provisional && (
+      {/* Only meaningful when there are positions on screen to qualify. */}
+      {state.provisional && rows && rows.length > 0 && (
         <StatusNotice className="mt-xs">
           Positions are provisional until the stewards publish the official
           classification.
@@ -138,9 +157,7 @@ export async function LiveView({
           </div>
         ) : (
           <StatusNotice tone="warning" className="mt-lg">
-            {isLive
-              ? `${sessionLabel} is running. This source only publishes a classification once the session ends.`
-              : `No classification has been published for ${sessionLabel} yet.`}
+            {emptyReason}
           </StatusNotice>
         ))}
 
