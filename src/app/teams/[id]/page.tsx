@@ -85,8 +85,8 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
                 <TeamLogo
                   constructorId={id}
                   name={team.name}
+                  width={132}
                   height={48}
-                  className="shrink-0"
                 />
               </div>
             </div>

@@ -117,9 +117,11 @@ would fail as body text, while a decorative stripe carries no contrast
 requirement. Audi and Cadillac are new for 2026 and their values are flagged
 `provisional` in that file.
 
-Logos, where supplied, are resized and converted by next/image — they render at
-32-48px, and source files that large would otherwise cost more than the rest of
-the page put together.
+Logos, where supplied, are fitted into a shared box rather than given a shared
+height — these marks range from square to 4.5:1, and a fixed height made the
+wide ones render four times the area of the square ones. `npm run logos:normalise`
+crops transparent borders so a mark centred in a large empty canvas is not
+rendered a few pixels tall, and next/image handles the rest.
 
 **No team logos are shipped.** They are registered trademarks, and no open
 dataset can license them however its own repository is licensed. To add your

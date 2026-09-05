@@ -10,7 +10,8 @@
     "verify:apis": "node scripts/verify-apis.mjs",
     "maps:circuits": "node scripts/import-circuit-maps.mjs",
     "snapshot:season": "node scripts/snapshot-season.mjs",
-    "import:teams": "node scripts/import-team-stats.mjs"
+    "import:teams": "node scripts/import-team-stats.mjs",
+    "logos:normalise": "node scripts/normalise-logos.mjs"
   },
   "dependencies": {
     "next": "16.3.4",
