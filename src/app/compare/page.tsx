@@ -105,11 +105,30 @@ function ComparisonTable({
   rightConstructorId?: string;
 }) {
   return (
-    <table className="w-full mt-lg border-collapse">
-      <caption className="sr-only">
-        {left.driver.fullName} compared with {right.driver.fullName}, 2026
-        season
-      </caption>
+    /*
+     * The table scrolls sideways inside this, rather than the page doing it.
+     *
+     * A three-column head-to-head has a real minimum width — two portraits,
+     * two names and a stat label. Measured on a 320px phone it wanted 458px
+     * and took the whole document sideways with it; letting the stat label
+     * wrap brings that to about 411, which still does not fit a phone.
+     *
+     * So the table scrolls inside this container and the page does not, which
+     * is the answer the results, timing and weather tables already use. The
+     * cost is honest: on a narrow screen the right-hand driver's portrait sits
+     * just off the edge until you swipe. Closing that last 20px would mean
+     * shrinking the portraits everywhere, including on desktop, which is a
+     * worse trade than a short sideways scroll.
+     *
+     * min-w is the floor for wide screens, deliberately below the natural
+     * minimum so it never forces the table wider than its content needs.
+     */
+    <div className="overflow-x-auto mt-lg">
+      <table className="w-full min-w-[24rem] border-collapse">
+        <caption className="sr-only">
+          {left.driver.fullName} compared with {right.driver.fullName}, 2026
+          season
+        </caption>
       <thead>
         <tr className="border-b border-hairline">
           <th scope="col" className="text-left py-xs w-2/5">
@@ -171,7 +190,10 @@ function ComparisonTable({
                 highlighted={winner === "a"}
                 align="left"
               />
-              <td className="py-sm text-center label-caps text-muted whitespace-nowrap px-xs">
+              {/* Allowed to wrap: keeping "Championship points" on one line
+                  set the table's minimum width on its own, and it reads fine
+                  over two lines. */}
+              <td className="py-sm text-center label-caps text-muted px-xs">
                 {stat.label}
               </td>
               <StatValue
@@ -182,9 +204,10 @@ function ComparisonTable({
               />
             </tr>
           );
-        })}
-      </tbody>
-    </table>
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

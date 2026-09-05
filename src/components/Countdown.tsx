@@ -65,7 +65,15 @@ export function Countdown({
 
   return (
     <div
-      className={cn("flex gap-lg", className)}
+      /*
+       * Wraps, and sits closer together below sm.
+       *
+       * Four units at a 48px gap need about 324px, against roughly 288px of
+       * content width on a 320px phone — so this was pushing the whole page
+       * sideways. gap-lg returns from sm: up, leaving every larger screen
+       * exactly as it was.
+       */
+      className={cn("flex flex-wrap gap-sm sm:gap-lg", className)}
       // The value changes every second; announcing it would be hostile.
       aria-live="off"
     >

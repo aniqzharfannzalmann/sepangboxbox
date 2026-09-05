@@ -81,7 +81,11 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
                 <SectionLabel>{team.fullName}</SectionLabel>
               </div>
 
-              <div className="flex items-center gap-sm mt-xs">
+              {/* Wraps so the logo drops below the name rather than off the
+                  side of a 320px screen — a 132px mark beside a 32px heading
+                  does not fit next to it there. No effect wider than that,
+                  where the row has always had room. */}
+              <div className="flex flex-wrap items-center gap-sm mt-xs">
                 <h1 className="text-display-xl text-ink">{team.name}</h1>
                 {/* 2:1, the ratio of the canvas the marks are centred on —
                     any other shape is just dead margin around them. */}
