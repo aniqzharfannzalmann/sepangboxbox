@@ -8,6 +8,13 @@ export interface CircuitPath {
   strokeWidth: number;
   linecap: string;
   linejoin: string;
+  /**
+   * Present only where the artwork places a shape by transform instead of
+   * drawing it in position. Three of the 23 do: Baku, Barcelona and Austin
+   * draw an axis-aligned start line and then rotate it onto the track.
+   * Dropping this leaves those start lines floating beside the circuit.
+   */
+  transform?: string;
 }
 
 export interface CircuitMapData {
@@ -122,6 +129,7 @@ export function CircuitOutline({
           <path
             key={i}
             d={path.d}
+            transform={path.transform}
             fill={path.filled ? colour : "none"}
             stroke={path.filled ? "none" : colour}
             strokeWidth={

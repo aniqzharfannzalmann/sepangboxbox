@@ -45,6 +45,7 @@
       },
       {
         "d": "M263.896 380.564h40v10h-40z",
+        "transform": "matrix(.26016 -.96557 -.9585 -.28506 465.978 820.88)",
         "filled": true,
         "strokeWidth": 0,
         "linecap": "round",
@@ -52,13 +53,14 @@
       },
       {
         "d": "m248.743 390.766 3.165-3.155 3.166-3.155 2.598 3.666 2.599 3.666",
+        "transform": "rotate(105.918 -76.76 586.27)scale(-1 1)",
         "filled": false,
         "strokeWidth": 2,
         "linecap": "square",
         "linejoin": "bevel"
       }
     ],
-    "viewBox": "23.4 25.6 454.1 447.7",
+    "viewBox": "23.4 25.6 454.1 462.6",
     "lengthKm": 5.513,
     "turns": 20,
     "type": "RACE",
@@ -78,6 +80,7 @@
       },
       {
         "d": "M263.896 380.564h40v10h-40z",
+        "transform": "matrix(-.72292 -.69093 -.70941 .7048 896.79 34.14)",
         "filled": true,
         "strokeWidth": 0,
         "linecap": "round",
@@ -85,6 +88,7 @@
       },
       {
         "d": "m248.743 390.766 3.165-3.155 3.166-3.155 2.598 3.666 2.599 3.666",
+        "transform": "rotate(44.543 406.716 1111.93)scale(-1 1)",
         "filled": false,
         "strokeWidth": 2,
         "linecap": "square",
@@ -111,6 +115,7 @@
       },
       {
         "d": "M406.01 372.637 377.095 345 370 352.048l28.917 27.637z",
+        "transform": "rotate(75.669 40.926 -90.802)scale(1 -1)",
         "filled": true,
         "strokeWidth": 0,
         "linecap": "round",
@@ -118,6 +123,7 @@
       },
       {
         "d": "m415.383 390.78-.042-4.468-.044-4.47-4.423.79-4.424.79",
+        "transform": "rotate(75.669 40.926 -90.802)scale(1 -1)",
         "filled": false,
         "strokeWidth": 2,
         "linecap": "square",

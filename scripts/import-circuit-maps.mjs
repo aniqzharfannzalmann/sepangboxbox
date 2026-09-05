@@ -147,8 +147,15 @@ function extractPaths(svg) {
       new RegExp(`(?:^|;)\\s*${name}\\s*:\\s*([^;]+)`).exec(style)?.[1]?.trim();
 
     const fill = prop("fill");
+    // Kept verbatim, and it matters. The artwork sometimes bakes the start
+    // line’s rotation into its path data and sometimes leaves the path
+    // axis-aligned with a transform to place it — Baku, Barcelona and Austin
+    // do the latter. Dropping it left those three start lines floating in open
+    // space beside the track.
+    const transform = /\stransform="([^"]+)"/.exec(tag)?.[1];
     paths.push({
       d,
+      ...(transform ? { transform } : {}),
       filled: Boolean(fill && fill !== "none"),
       strokeWidth: Number(prop("stroke-width") ?? 0),
       linecap: prop("stroke-linecap") ?? "round",
@@ -163,7 +170,9 @@ function extractPaths(svg) {
   // half the frame is empty and the drawing renders small. Crop the viewBox to
   // what is actually drawn, padded by half the widest stroke so the line is
   // not clipped, and the map fills its space in both directions.
-  const boxes = paths.map((p) => pathBounds(p.d));
+  const boxes = paths.map((p) =>
+    transformBounds(pathBounds(p.d), parseTransform(p.transform)),
+  );
   const pad = Math.max(...paths.map((p) => p.strokeWidth)) / 2 + 2;
   const minX = Math.min(...boxes.map((b) => b[0])) - pad;
   const minY = Math.min(...boxes.map((b) => b[1])) - pad;
@@ -175,6 +184,95 @@ function extractPaths(svg) {
     paths,
     viewBox: `${round(minX)} ${round(minY)} ${round(maxX - minX)} ${round(maxY - minY)}`,
   };
+}
+
+/**
+ * An SVG transform list, reduced to a single matrix [a, b, c, d, e, f].
+ *
+ * Only what these assets actually use — matrix, translate, scale, rotate — and
+ * they compose, e.g. `rotate(44.5 406 1111)scale(-1 1)`. Anything unrecognised
+ * is ignored rather than guessed at, which would silently move a marker.
+ */
+const IDENTITY = [1, 0, 0, 1, 0, 0];
+
+function multiply(m, n) {
+  return [
+    m[0] * n[0] + m[2] * n[1],
+    m[1] * n[0] + m[3] * n[1],
+    m[0] * n[2] + m[2] * n[3],
+    m[1] * n[2] + m[3] * n[3],
+    m[0] * n[4] + m[2] * n[5] + m[4],
+    m[1] * n[4] + m[3] * n[5] + m[5],
+  ];
+}
+
+function parseTransform(transform) {
+  if (!transform) return IDENTITY;
+
+  let out = IDENTITY;
+  for (const [, name, args] of transform.matchAll(
+    /([a-zA-Z]+)\s*\(([^)]*)\)/g,
+  )) {
+    const n = (args.match(/-?\d*\.?\d+(?:[eE][-+]?\d+)?/g) ?? []).map(Number);
+    if (name === "matrix" && n.length === 6) {
+      out = multiply(out, n);
+    } else if (name === "translate") {
+      out = multiply(out, [1, 0, 0, 1, n[0] ?? 0, n[1] ?? 0]);
+    } else if (name === "scale") {
+      out = multiply(out, [n[0] ?? 1, 0, 0, n[1] ?? n[0] ?? 1, 0, 0]);
+    } else if (name === "rotate") {
+      const r = ((n[0] ?? 0) * Math.PI) / 180;
+      const cos = Math.cos(r);
+      const sin = Math.sin(r);
+      const rot = [cos, sin, -sin, cos, 0, 0];
+      if (n.length >= 3) {
+        // rotate(a cx cy) is translate(cx,cy) rotate(a) translate(-cx,-cy).
+        out = multiply(out, [1, 0, 0, 1, n[1], n[2]]);
+        out = multiply(out, rot);
+        out = multiply(out, [1, 0, 0, 1, -n[1], -n[2]]);
+      } else {
+        out = multiply(out, rot);
+      }
+    } else {
+      /*
+       * Refuse rather than ignore.
+       *
+       * An unhandled function here would leave the matrix subtly wrong and put
+       * a start line somewhere plausible but incorrect — which is the failure
+       * this whole function exists to fix, and it is invisible unless someone
+       * looks at all 23 drawings. skewX/skewY are the likely additions.
+       */
+      throw new Error(
+        `unsupported SVG transform "${name}" in "${transform}" — teach parseTransform about it`,
+      );
+    }
+  }
+  return out;
+}
+
+/**
+ * A bounding box through a matrix.
+ *
+ * The four corners are transformed and re-bounded, which over-estimates a
+ * rotated shape slightly. That is the safe direction here: the result only
+ * feeds the viewBox crop, so erring wide pads the frame rather than clipping
+ * the drawing.
+ */
+function transformBounds([x0, y0, x1, y1], m) {
+  if (m === IDENTITY) return [x0, y0, x1, y1];
+
+  const xs = [];
+  const ys = [];
+  for (const [x, y] of [
+    [x0, y0],
+    [x1, y0],
+    [x0, y1],
+    [x1, y1],
+  ]) {
+    xs.push(m[0] * x + m[2] * y + m[4]);
+    ys.push(m[1] * x + m[3] * y + m[5]);
+  }
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
 }
 
 /**
