@@ -26,8 +26,7 @@ import { teamHex } from "@/lib/f1/team-colours";
  */
 const PORTRAIT_DIR = path.join(process.cwd(), "public", "drivers");
 
-/** Read the directory once per process — these change only on deploy. */
-const AVAILABLE: Map<string, string> = (() => {
+function listPortraits(): Map<string, string> {
   const found = new Map<string, string>();
   if (!existsSync(PORTRAIT_DIR)) return found;
 
@@ -37,7 +36,20 @@ const AVAILABLE: Map<string, string> = (() => {
     found.set(path.basename(file, ext), `/drivers/${file}`);
   }
   return found;
-})();
+}
+
+/**
+ * Cached in production, re-read in development.
+ *
+ * In production these change only on deploy, so reading the directory once per
+ * process is right. In development they change while the server is running —
+ * that is the whole workflow for adding a driver — and a cached listing taken
+ * before the file existed means the portrait does not appear and the only cure
+ * is a restart. That wasted two verification passes before it was worth
+ * fixing.
+ */
+const CACHED = process.env.NODE_ENV === "production" ? listPortraits() : null;
+const available = () => CACHED ?? listPortraits();
 
 /**
  * Initials, from the parts of a name rather than from its first two letters.
@@ -71,7 +83,7 @@ export function DriverPortrait({
   size?: number;
   className?: string;
 }) {
-  const src = AVAILABLE.get(driverId);
+  const src = available().get(driverId);
   const hex = constructorId ? teamHex(constructorId) : null;
 
   /*
