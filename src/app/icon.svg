@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Sepang Box Box">
+  <!--
+    The header wordmark's brand bar, on the app canvas.
+
+    A wordmark is unreadable at 16px, so the icon is the bar alone. The
+    proportions are the header's own 6x24 rule, 1:4, scaled to fill the tile.
+    Both colours are design tokens rather than new values: #da291c is Rosso
+    Corsa (colors.primary) and #181818 is the canvas.
+
+    No double hyphens in here. XML forbids them inside a comment, and writing
+    the token names out literally made this file invalid.
+  -->
+  <rect width="32" height="32" fill="#181818"/>
+  <rect x="12" y="4" width="8" height="24" fill="#da291c"/>
+</svg>

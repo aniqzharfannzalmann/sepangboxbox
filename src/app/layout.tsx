@@ -15,7 +15,20 @@ const inter = Inter({
   display: "swap",
 });
 
+/**
+ * Where relative metadata URLs resolve from.
+ *
+ * `og:image` has to be absolute for a crawler to fetch it, and without a base
+ * Next both warns and emits a localhost URL — so a shared link would preview
+ * as nothing. Vercel supplies VERCEL_URL on every deployment; the fallback is
+ * only for local work, where nothing is crawling anyway.
+ */
+const siteUrl = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Sepang Box Box",
     template: "%s · Sepang Box Box",
