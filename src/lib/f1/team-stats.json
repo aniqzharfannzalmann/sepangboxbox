@@ -1,0 +1,616 @@
+{
+  "alpine": {
+    "f1dbId": "alpine",
+    "name": "Alpine F1 Team",
+    "fullName": "Alpine F1 Team",
+    "own": {
+      "entries": 126,
+      "starts": 126,
+      "wins": 1,
+      "podiums": 7,
+      "poles": 0,
+      "fastestLaps": 1,
+      "titles": 0,
+      "points": 598
+    },
+    "lineage": [
+      {
+        "id": "renault",
+        "name": "Renault Sport Formula One Team",
+        "record": {
+          "entries": 403,
+          "starts": 400,
+          "wins": 35,
+          "podiums": 103,
+          "poles": 51,
+          "fastestLaps": 33,
+          "titles": 2,
+          "points": 1777
+        }
+      },
+      {
+        "id": "benetton",
+        "name": "Benetton Formula",
+        "record": {
+          "entries": 260,
+          "starts": 260,
+          "wins": 27,
+          "podiums": 102,
+          "poles": 15,
+          "fastestLaps": 36,
+          "titles": 1,
+          "points": 852
+        }
+      },
+      {
+        "id": "lotus-f1",
+        "name": "Lotus F1 Team",
+        "record": {
+          "entries": 77,
+          "starts": 77,
+          "wins": 2,
+          "podiums": 25,
+          "poles": 0,
+          "fastestLaps": 5,
+          "titles": 0,
+          "points": 706
+        }
+      },
+      {
+        "id": "toleman",
+        "name": "Toleman Motorsport",
+        "record": {
+          "entries": 70,
+          "starts": 57,
+          "wins": 0,
+          "podiums": 3,
+          "poles": 1,
+          "fastestLaps": 2,
+          "titles": 0,
+          "points": 26
+        }
+      }
+    ],
+    "combined": {
+      "entries": 936,
+      "starts": 920,
+      "wins": 65,
+      "podiums": 240,
+      "poles": 67,
+      "fastestLaps": 77,
+      "titles": 3,
+      "points": 3959
+    }
+  },
+  "aston_martin": {
+    "f1dbId": "aston-martin",
+    "name": "Aston Martin",
+    "fullName": "Aston Martin",
+    "own": {
+      "entries": 132,
+      "starts": 131,
+      "wins": 0,
+      "podiums": 9,
+      "poles": 0,
+      "fastestLaps": 3,
+      "titles": 0,
+      "points": 598
+    },
+    "lineage": [
+      {
+        "id": "jordan",
+        "name": "Jordan Grand Prix",
+        "record": {
+          "entries": 250,
+          "starts": 250,
+          "wins": 4,
+          "podiums": 19,
+          "poles": 2,
+          "fastestLaps": 2,
+          "titles": 0,
+          "points": 291
+        }
+      },
+      {
+        "id": "force-india",
+        "name": "Force India F1 Team",
+        "record": {
+          "entries": 212,
+          "starts": 212,
+          "wins": 0,
+          "podiums": 6,
+          "poles": 1,
+          "fastestLaps": 5,
+          "titles": 0,
+          "points": 1039
+        }
+      },
+      {
+        "id": "racing-point",
+        "name": "Racing Point F1 Team",
+        "record": {
+          "entries": 38,
+          "starts": 38,
+          "wins": 1,
+          "podiums": 4,
+          "poles": 1,
+          "fastestLaps": 0,
+          "titles": 0,
+          "points": 268
+        }
+      },
+      {
+        "id": "midland",
+        "name": "Midland F1 Racing",
+        "record": {
+          "entries": 18,
+          "starts": 18,
+          "wins": 0,
+          "podiums": 0,
+          "poles": 0,
+          "fastestLaps": 0,
+          "titles": 0,
+          "points": 0
+        }
+      },
+      {
+        "id": "spyker",
+        "name": "Spyker F1 Team",
+        "record": {
+          "entries": 17,
+          "starts": 17,
+          "wins": 0,
+          "podiums": 0,
+          "poles": 0,
+          "fastestLaps": 0,
+          "titles": 0,
+          "points": 1
+        }
+      }
+    ],
+    "combined": {
+      "entries": 667,
+      "starts": 666,
+      "wins": 5,
+      "podiums": 38,
+      "poles": 4,
+      "fastestLaps": 10,
+      "titles": 0,
+      "points": 2197
+    }
+  },
+  "audi": {
+    "f1dbId": "audi",
+    "name": "Audi",
+    "fullName": "Audi",
+    "own": {
+      "entries": 12,
+      "starts": 12,
+      "wins": 0,
+      "podiums": 0,
+      "poles": 0,
+      "fastestLaps": 0,
+      "titles": 0,
+      "points": 16
+    },
+    "lineage": [
+      {
+        "id": "sauber",
+        "name": "Sauber F1 Team",
+        "record": {
+          "entries": 395,
+          "starts": 392,
+          "wins": 0,
+          "podiums": 10,
+          "poles": 0,
+          "fastestLaps": 3,
+          "titles": 0,
+          "points": 557
+        }
+      },
+      {
+        "id": "alfa-romeo",
+        "name": "Alfa Romeo Racing",
+        "record": {
+          "entries": 214,
+          "starts": 214,
+          "wins": 10,
+          "podiums": 26,
+          "poles": 12,
+          "fastestLaps": 16,
+          "titles": 0,
+          "points": 199
+        }
+      },
+      {
+        "id": "bmw-sauber",
+        "name": "BMW Sauber F1 Team",
+        "record": {
+          "entries": 70,
+          "starts": 70,
+          "wins": 1,
+          "podiums": 17,
+          "poles": 1,
+          "fastestLaps": 2,
+          "titles": 0,
+          "points": 308
+        }
+      },
+      {
+        "id": "kick-sauber",
+        "name": "Kick Sauber F1 Team",
+        "record": {
+          "entries": 48,
+          "starts": 48,
+          "wins": 0,
+          "podiums": 1,
+          "poles": 0,
+          "fastestLaps": 0,
+          "titles": 0,
+          "points": 74
+        }
+      }
+    ],
+    "combined": {
+      "entries": 739,
+      "starts": 736,
+      "wins": 11,
+      "podiums": 54,
+      "poles": 13,
+      "fastestLaps": 21,
+      "titles": 0,
+      "points": 1154
+    }
+  },
+  "cadillac": {
+    "f1dbId": "cadillac",
+    "name": "Cadillac F1 Team",
+    "fullName": "Cadillac",
+    "own": {
+      "entries": 12,
+      "starts": 12,
+      "wins": 0,
+      "podiums": 0,
+      "poles": 0,
+      "fastestLaps": 0,
+      "titles": 0,
+      "points": 0
+    },
+    "lineage": [],
+    "combined": {
+      "entries": 12,
+      "starts": 12,
+      "wins": 0,
+      "podiums": 0,
+      "poles": 0,
+      "fastestLaps": 0,
+      "titles": 0,
+      "points": 0
+    }
+  },
+  "ferrari": {
+    "f1dbId": "ferrari",
+    "name": "Ferrari",
+    "fullName": "Scuderia Ferrari",
+    "own": {
+      "entries": 1136,
+      "starts": 1134,
+      "wins": 250,
+      "podiums": 845,
+      "poles": 254,
+      "fastestLaps": 270,
+      "titles": 16,
+      "points": 11013
+    },
+    "lineage": [],
+    "combined": {
+      "entries": 1136,
+      "starts": 1134,
+      "wins": 250,
+      "podiums": 845,
+      "poles": 254,
+      "fastestLaps": 270,
+      "titles": 16,
+      "points": 11013
+    }
+  },
+  "haas": {
+    "f1dbId": "haas",
+    "name": "Haas F1 Team",
+    "fullName": "Haas F1 Team",
+    "own": {
+      "entries": 226,
+      "starts": 226,
+      "wins": 0,
+      "podiums": 0,
+      "poles": 1,
+      "fastestLaps": 3,
+      "titles": 0,
+      "points": 407
+    },
+    "lineage": [],
+    "combined": {
+      "entries": 226,
+      "starts": 226,
+      "wins": 0,
+      "podiums": 0,
+      "poles": 1,
+      "fastestLaps": 3,
+      "titles": 0,
+      "points": 407
+    }
+  },
+  "mclaren": {
+    "f1dbId": "mclaren",
+    "name": "McLaren",
+    "fullName": "McLaren Racing",
+    "own": {
+      "entries": 1010,
+      "starts": 1005,
+      "wins": 205,
+      "podiums": 564,
+      "poles": 179,
+      "fastestLaps": 186,
+      "titles": 10,
+      "points": 8047
+    },
+    "lineage": [],
+    "combined": {
+      "entries": 1010,
+      "starts": 1005,
+      "wins": 205,
+      "podiums": 564,
+      "poles": 179,
+      "fastestLaps": 186,
+      "titles": 10,
+      "points": 8047
+    }
+  },
+  "mercedes": {
+    "f1dbId": "mercedes",
+    "name": "Mercedes",
+    "fullName": "Mercedes AMG F1",
+    "own": {
+      "entries": 353,
+      "starts": 353,
+      "wins": 139,
+      "podiums": 326,
+      "poles": 153,
+      "fastestLaps": 121,
+      "titles": 8,
+      "points": 8585
+    },
+    "lineage": [
+      {
+        "id": "tyrrell",
+        "name": "Tyrrell Racing",
+        "record": {
+          "entries": 433,
+          "starts": 431,
+          "wins": 23,
+          "podiums": 77,
+          "poles": 14,
+          "fastestLaps": 20,
+          "titles": 1,
+          "points": 617
+        }
+      },
+      {
+        "id": "bar",
+        "name": "British American Racing",
+        "record": {
+          "entries": 118,
+          "starts": 117,
+          "wins": 0,
+          "podiums": 15,
+          "poles": 2,
+          "fastestLaps": 0,
+          "titles": 0,
+          "points": 227
+        }
+      },
+      {
+        "id": "honda",
+        "name": "Honda Racing F1 Team",
+        "record": {
+          "entries": 88,
+          "starts": 88,
+          "wins": 3,
+          "podiums": 9,
+          "poles": 2,
+          "fastestLaps": 2,
+          "titles": 0,
+          "points": 154
+        }
+      },
+      {
+        "id": "brawn",
+        "name": "Brawn GP Formula One Team",
+        "record": {
+          "entries": 17,
+          "starts": 17,
+          "wins": 8,
+          "podiums": 15,
+          "poles": 5,
+          "fastestLaps": 4,
+          "titles": 1,
+          "points": 172
+        }
+      }
+    ],
+    "combined": {
+      "entries": 1009,
+      "starts": 1006,
+      "wins": 173,
+      "podiums": 442,
+      "poles": 176,
+      "fastestLaps": 147,
+      "titles": 10,
+      "points": 9755
+    }
+  },
+  "rb": {
+    "f1dbId": "rb",
+    "name": "RB F1 Team",
+    "fullName": "Racing Bulls",
+    "own": {
+      "entries": 24,
+      "starts": 24,
+      "wins": 0,
+      "podiums": 0,
+      "poles": 0,
+      "fastestLaps": 1,
+      "titles": 0,
+      "points": 46
+    },
+    "lineage": [
+      {
+        "id": "minardi",
+        "name": "Minardi F1 Team",
+        "record": {
+          "entries": 346,
+          "starts": 339,
+          "wins": 0,
+          "podiums": 0,
+          "poles": 0,
+          "fastestLaps": 0,
+          "titles": 0,
+          "points": 38
+        }
+      },
+      {
+        "id": "toro-rosso",
+        "name": "Scuderia Toro Rosso",
+        "record": {
+          "entries": 268,
+          "starts": 268,
+          "wins": 1,
+          "podiums": 3,
+          "poles": 1,
+          "fastestLaps": 1,
+          "titles": 0,
+          "points": 500
+        }
+      },
+      {
+        "id": "alphatauri",
+        "name": "Scuderia AlphaTauri",
+        "record": {
+          "entries": 83,
+          "starts": 83,
+          "wins": 1,
+          "podiums": 2,
+          "poles": 0,
+          "fastestLaps": 2,
+          "titles": 0,
+          "points": 309
+        }
+      },
+      {
+        "id": "racing-bulls",
+        "name": "Racing Bulls",
+        "record": {
+          "entries": 36,
+          "starts": 36,
+          "wins": 0,
+          "podiums": 1,
+          "poles": 0,
+          "fastestLaps": 0,
+          "titles": 0,
+          "points": 158
+        }
+      }
+    ],
+    "combined": {
+      "entries": 757,
+      "starts": 750,
+      "wins": 2,
+      "podiums": 6,
+      "poles": 1,
+      "fastestLaps": 4,
+      "titles": 0,
+      "points": 1051
+    }
+  },
+  "red_bull": {
+    "f1dbId": "red-bull",
+    "name": "Red Bull",
+    "fullName": "Red Bull Racing",
+    "own": {
+      "entries": 430,
+      "starts": 429,
+      "wins": 130,
+      "podiums": 301,
+      "poles": 111,
+      "fastestLaps": 103,
+      "titles": 6,
+      "points": 8474
+    },
+    "lineage": [
+      {
+        "id": "jaguar",
+        "name": "Jaguar Racing F1 Team",
+        "record": {
+          "entries": 85,
+          "starts": 85,
+          "wins": 0,
+          "podiums": 2,
+          "poles": 0,
+          "fastestLaps": 0,
+          "titles": 0,
+          "points": 49
+        }
+      },
+      {
+        "id": "stewart",
+        "name": "Stewart Grand Prix",
+        "record": {
+          "entries": 49,
+          "starts": 49,
+          "wins": 1,
+          "podiums": 5,
+          "poles": 1,
+          "fastestLaps": 0,
+          "titles": 0,
+          "points": 47
+        }
+      }
+    ],
+    "combined": {
+      "entries": 564,
+      "starts": 563,
+      "wins": 131,
+      "podiums": 308,
+      "poles": 112,
+      "fastestLaps": 103,
+      "titles": 6,
+      "points": 8570
+    }
+  },
+  "williams": {
+    "f1dbId": "williams",
+    "name": "Williams",
+    "fullName": "Williams Grand Prix Engineering",
+    "own": {
+      "entries": 863,
+      "starts": 862,
+      "wins": 114,
+      "podiums": 314,
+      "poles": 128,
+      "fastestLaps": 134,
+      "titles": 9,
+      "points": 3779
+    },
+    "lineage": [],
+    "combined": {
+      "entries": 863,
+      "starts": 862,
+      "wins": 114,
+      "podiums": 314,
+      "poles": 128,
+      "fastestLaps": 134,
+      "titles": 9,
+      "points": 3779
+    }
+  }
+}

@@ -95,6 +95,34 @@ all covered by `npm run verify:apis`:
 - **The 2026 running is excluded.** It appears in the circuit's race list but
   has no result, and must never be counted as a win.
 
+## Teams
+
+`/teams` and `/teams/[id]` cover the eleven constructors of the 2026 grid.
+Career records are imported from F1DB by `npm run import:teams` into
+[`src/lib/f1/team-stats.json`](src/lib/f1/team-stats.json).
+
+Each team is shown twice: as the entity racing under that name today, and
+including every entry it continues. F1DB records Aston Martin with zero wins,
+which is true since 2021 and misleading alone — the entry it continues won at
+Spa in 1998 as Jordan and at Sakhir in 2020 as Racing Point. Both figures are
+imported and the page labels each.
+
+### Colours and logos
+
+Livery colours live in
+[`src/lib/f1/team-colours.ts`](src/lib/f1/team-colours.ts) and appear as a
+stripe beside rows in the standings and timing tables. They are used as a rule
+rather than as text on purpose: several fall below 4.5:1 against the canvas and
+would fail as body text, while a decorative stripe carries no contrast
+requirement. Audi and Cadillac are new for 2026 and their values are flagged
+`provisional` in that file.
+
+**No team logos are shipped.** They are registered trademarks, and no open
+dataset can license them however its own repository is licensed. To add your
+own, drop a file at `public/teams/<constructorId>.svg` — see
+[`public/teams/README.md`](public/teams/README.md). It then appears
+automatically; without one the pages fall back to the colour stripe and name.
+
 ## Circuit profiles
 
 `/circuits/[id]` covers all 23 rounds: races held, lap record, most successful

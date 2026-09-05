@@ -330,6 +330,61 @@ try {
   check("circuit map data", false, error.message);
 }
 
+console.log("\nTeams");
+try {
+  const { readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const read = (rel) =>
+    JSON.parse(readFileSync(fileURLToPath(new URL(rel, import.meta.url)), "utf8"));
+
+  const teamStats = read("../src/lib/f1/team-stats.json");
+  const colourSource = readFileSync(
+    fileURLToPath(new URL("../src/lib/f1/team-colours.ts", import.meta.url)),
+    "utf8",
+  );
+
+  const standings = await json(
+    `${JOLPICA}/current/constructorStandings.json?limit=100`,
+  );
+  const grid = (
+    standings.MRData?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings ?? []
+  ).map((s) => s.Constructor.constructorId);
+
+  check("eleven constructors on the 2026 grid", grid.length === 11, `got ${grid.length}`);
+
+  // A team joining or leaving must surface here rather than as a row with no
+  // colour and no history.
+  const noStats = grid.filter((id) => !teamStats[id]);
+  check(
+    "every team on the grid has a career record",
+    noStats.length === 0,
+    noStats.length ? `missing ${noStats.join(", ")}` : "",
+  );
+
+  const noColour = grid.filter((id) => !new RegExp(`^\\s*${id}:`, "m").test(colourSource));
+  check(
+    "every team on the grid has a livery colour",
+    noColour.length === 0,
+    noColour.length ? `missing ${noColour.join(", ")}` : "",
+  );
+
+  // Lineage is the reason these pages do not read "Aston Martin, 0 wins".
+  check(
+    "Aston Martin carries its predecessors",
+    teamStats.aston_martin?.own.wins === 0 &&
+      teamStats.aston_martin?.combined.wins > 0,
+    `own ${teamStats.aston_martin?.own.wins}, combined ${teamStats.aston_martin?.combined.wins}`,
+  );
+  check(
+    "Ferrari's record is its own",
+    teamStats.ferrari?.own.wins === teamStats.ferrari?.combined.wins &&
+      teamStats.ferrari?.own.wins > 200,
+    `${teamStats.ferrari?.own.wins} wins`,
+  );
+} catch (error) {
+  check("team data", false, error.message);
+}
+
 console.log(
   `\n${checks - failures}/${checks} checks passed${failures ? ` — ${failures} FAILED` : ""}\n`,
 );

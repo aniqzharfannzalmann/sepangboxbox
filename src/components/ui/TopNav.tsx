@@ -9,6 +9,7 @@ import { Container } from "./primitives";
 const NAV = [
   { href: "/live", label: "Live" },
   { href: "/standings", label: "Standings" },
+  { href: "/teams", label: "Teams" },
   { href: "/schedule", label: "Schedule" },
   { href: "/results", label: "Results" },
   { href: "/compare", label: "Compare" },

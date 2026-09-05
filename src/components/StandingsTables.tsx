@@ -1,4 +1,5 @@
 import { StatusNotice } from "@/components/StatusNotice";
+import { TeamStripe } from "@/components/team/TeamStripe";
 import { cn } from "@/lib/cn";
 import type {
   ConstructorStanding,
@@ -85,6 +86,9 @@ export function DriverStandingsTable({
           >
             <PositionCell position={entry.position} />
             <td className={TD}>
+              <span className="flex items-stretch gap-xs">
+                <TeamStripe constructorId={entry.constructors[0]?.id ?? ""} />
+                <span className="block">
               <span className="text-body-md text-ink">
                 {entry.driver.fullName}
               </span>
@@ -92,6 +96,8 @@ export function DriverStandingsTable({
                 {entry.constructors.map((c) => c.name).join(" / ")}
                 {entry.wins > 0 &&
                   ` · ${entry.wins} ${entry.wins === 1 ? "win" : "wins"}`}
+              </span>
+                </span>
               </span>
             </td>
             <td className={cn(TD, "text-right tnum text-title-sm text-ink")}>
@@ -148,14 +154,19 @@ export function ConstructorStandingsTable({
           >
             <PositionCell position={entry.position} />
             <td className={TD}>
-              <span className="text-body-md text-ink">
-                {entry.constructor.name}
-              </span>
-              {entry.wins > 0 && (
-                <span className="block text-caption text-muted">
-                  {entry.wins} {entry.wins === 1 ? "win" : "wins"}
+              <span className="flex items-stretch gap-xs">
+                <TeamStripe constructorId={entry.constructor.id} />
+                <span className="block">
+                  <span className="text-body-md text-ink">
+                    {entry.constructor.name}
+                  </span>
+                  {entry.wins > 0 && (
+                    <span className="block text-caption text-muted">
+                      {entry.wins} {entry.wins === 1 ? "win" : "wins"}
+                    </span>
+                  )}
                 </span>
-              )}
+              </span>
             </td>
             <td className={cn(TD, "text-right tnum text-title-sm text-ink")}>
               {entry.points}

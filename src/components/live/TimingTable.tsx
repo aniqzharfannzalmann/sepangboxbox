@@ -1,3 +1,4 @@
+import { TeamStripe } from "@/components/team/TeamStripe";
 import { cn } from "@/lib/cn";
 import type { SourceCapabilities } from "@/lib/f1/sources/types";
 import type { TimingRow } from "@/lib/f1/types";
@@ -106,6 +107,9 @@ export function TimingTable({
             >
               <PositionCell row={row} />
               <td className={TD}>
+                <span className="flex items-stretch gap-xs">
+                  <TeamStripe constructorId={row.constructor.id} />
+                  <span className="block">
                 <span className="text-body-md text-ink">
                   {row.driver.code ?? row.driver.familyName}
                   <span className="text-muted"> · </span>
@@ -117,6 +121,8 @@ export function TimingTable({
                   {row.lapsCompleted !== null && !row.retired
                     ? ` · ${row.lapsCompleted} laps`
                     : ""}
+                </span>
+                  </span>
                 </span>
               </td>
               {showTyre && (

@@ -14,6 +14,7 @@ const COLUMNS = [
     heading: "Season",
     links: [
       { href: "/standings", label: "Standings" },
+      { href: "/teams", label: "Teams" },
       { href: "/compare", label: "Compare drivers" },
     ],
   },
