@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getQualifyingResult, getRaceResult } from "../jolpica";
+import { getQualifyingResult, getRaceResult, getRaceWeekend } from "../jolpica";
 import { getWeekendState } from "../session-windows";
 import type {
   LiveSessionState,
@@ -42,6 +42,31 @@ const CAPABILITIES: SourceCapabilities = {
  */
 const PROVISIONAL_MINUTES = 60;
 
+/** "1:11.163" or "58.221" to seconds. Null if it is not a lap time. */
+function lapTimeToSeconds(time: string | null): number | null {
+  if (!time) return null;
+  const m = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(time.trim());
+  if (!m) return null;
+  return (m[1] ? Number(m[1]) * 60 : 0) + Number(m[2]);
+}
+
+/**
+ * Points the source at a weekend other than Sepang, and/or at a pretend clock.
+ *
+ * This exists so the timing table can be exercised before Sepang has run.
+ * Round 16 has no results yet, so in normal operation getTimingRows() always
+ * returns null and the table, the provisional badge and the retired-driver
+ * styling never render at all — they would be seen working for the first time
+ * on race day. Pinning the source to a completed round renders them now,
+ * against real classifications.
+ */
+export interface SourcePin {
+  season: string;
+  round: string;
+  /** Pretend "now" reads this, to land inside or just after a given session. */
+  nowMs?: number;
+}
+
 export class JolpicaTimingSource implements LiveTimingSource {
   readonly id = "jolpica" as const;
   readonly fidelity = "post-session" as const;
@@ -50,8 +75,18 @@ export class JolpicaTimingSource implements LiveTimingSource {
     "Official classifications from Jolpica-F1, published after each session. " +
     "Second-by-second timing needs OpenF1 live access.";
 
+  constructor(private readonly pin?: SourcePin) {}
+
   async getSessionState(): Promise<LiveSessionState> {
-    const weekend = await getSepangWeekend();
+    // Unpinned, this is the Sepang weekend with its committed fallback.
+    // Pinned, it is whichever round the preview asked for.
+    const weekend = this.pin
+      ? {
+          data: await getRaceWeekend(this.pin.season, this.pin.round),
+          fetchedAtMs: this.pin.nowMs ?? Date.now(),
+        }
+      : await getSepangWeekend();
+
     const state = getWeekendState(weekend.data, weekend.fetchedAtMs);
     const session = state.current ?? state.previous;
 
@@ -109,6 +144,7 @@ export class JolpicaTimingSource implements LiveTimingSource {
       lastLap: null,
       bestLap: row.fastestLap,
       lapsCompleted: row.laps,
+      lapsDown: row.lapsDown,
       tyre: null,
       stintLaps: null,
       inPit: false,
@@ -130,19 +166,32 @@ export class JolpicaTimingSource implements LiveTimingSource {
     }
     if (!result) return null;
 
+    // Pole time is the reference for everyone else's gap. Showing each
+    // driver's own lap in the Gap column just repeats the Best column.
+    const poleSeconds = lapTimeToSeconds(
+      result.rows[0]?.q3 ?? result.rows[0]?.q2 ?? result.rows[0]?.q1 ?? null,
+    );
+
     return result.rows.map((row) => {
       // Best time is the last segment the driver actually set a lap in.
       const best = row.q3 ?? row.q2 ?? row.q1;
+      const seconds = lapTimeToSeconds(best);
+      const gap =
+        row.position === 1 || poleSeconds === null || seconds === null
+          ? best
+          : `+${(seconds - poleSeconds).toFixed(3)}`;
+
       return {
         position: row.position,
         positionText: String(row.position),
         driver: row.driver,
         constructor: row.constructor,
-        gapToLeader: best,
+        gapToLeader: gap,
         gapToAhead: null,
         lastLap: null,
         bestLap: best,
         lapsCompleted: null,
+        lapsDown: 0,
         tyre: null,
         stintLaps: null,
         inPit: false,

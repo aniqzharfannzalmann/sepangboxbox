@@ -361,12 +361,16 @@ export async function getRaceResult(
   const race = json.MRData.RaceTable?.Races?.[0];
   if (!race?.Results?.length) return null;
 
+  // The winner's lap count is the reference every other car is measured against.
+  const leaderLaps = Number(race.Results[0]?.laps ?? 0);
+
   const rows: RaceResultRow[] = race.Results.map((r) => ({
     position: Number.isFinite(Number(r.position)) ? Number(r.position) : null,
     positionText: r.positionText,
     points: Number(r.points),
     gridPosition: Number(r.grid),
     laps: Number(r.laps),
+    lapsDown: Math.max(0, leaderLaps - Number(r.laps)),
     status: r.status,
     driver: toDriver(r.Driver),
     constructor: toConstructor(r.Constructor),

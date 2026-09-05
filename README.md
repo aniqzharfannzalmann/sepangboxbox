@@ -77,6 +77,21 @@ Its per-endpoint cache windows are load-bearing, not politeness: the sponsor
 tier allows 60 requests/minute and polling all seven endpoints at 5s would be
 84/minute and would be throttled mid-race.
 
+## Previewing the timing view
+
+Sepang is round 16 and has not run, so `/live` shows a countdown and the
+timing table never renders. To drive the real view against a completed round:
+
+```
+/live/preview/12                 the race classification
+/live/preview/12?session=quali   clock pinned just after qualifying, which
+                                 also exercises the provisional state
+```
+
+It renders the same `LiveView` component through the same source class — a
+preview built from different components would prove nothing. Not indexed, and
+not linked from the app.
+
 ## Degrading gracefully
 
 The schedule is the most important thing this app shows during race week, and

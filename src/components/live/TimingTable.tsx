@@ -34,6 +34,19 @@ function PositionCell({ row }: { row: TimingRow }) {
   );
 }
 
+/**
+ * What to print in the Gap column.
+ *
+ * A lapped car's raw time is its gap across the line, not to the leader, so
+ * printing it puts "+36.049" at P8 underneath "+1:19.915" at P7 and makes the
+ * order look wrong. Lap deficit is the honest figure for those cars.
+ */
+function gapLabel(row: TimingRow): string {
+  if (row.retired) return "—";
+  if (row.lapsDown > 0) return `+${row.lapsDown} lap${row.lapsDown > 1 ? "s" : ""}`;
+  return row.gapToLeader ?? "—";
+}
+
 export function TimingTable({
   rows,
   capabilities,
@@ -112,7 +125,7 @@ export function TimingTable({
                 </td>
               )}
               <td className={cn(TD, "text-right tnum text-body-md text-ink")}>
-                {row.gapToLeader ?? "—"}
+                {gapLabel(row)}
               </td>
               {showGapAhead && (
                 <td className={cn(TD, "text-right tnum text-body-md text-body")}>

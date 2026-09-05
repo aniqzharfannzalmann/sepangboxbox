@@ -96,6 +96,15 @@ export interface RaceResultRow {
   points: number;
   gridPosition: number;
   laps: number;
+  /**
+   * Laps behind the winner. 0 means the lead lap.
+   *
+   * Ergast reports `time` for lapped cars too, but it is their gap across the
+   * line, not to the leader — so a lapped P8 can read +36s while the P7 on the
+   * lead lap reads +1:19. Displaying it as a gap is actively misleading, and
+   * this is what lets the UI show "+1 lap" instead.
+   */
+  lapsDown: number;
   status: string;
   driver: Driver;
   constructor: Constructor;
@@ -193,6 +202,8 @@ export interface TimingRow {
   lastLap: string | null;
   bestLap: string | null;
   lapsCompleted: number | null;
+  /** Laps behind the leader; 0 on the lead lap. See RaceResultRow.lapsDown. */
+  lapsDown: number;
   tyre: TyreCompound | null;
   stintLaps: number | null;
   inPit: boolean;

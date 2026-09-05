@@ -91,7 +91,12 @@ function RaceTable({ result }: { result: RaceResult }) {
                   {row.gridPosition || "—"}
                 </td>
                 <td className={cn(TD, "text-right tnum text-body-md text-body")}>
-                  {row.time ?? "—"}
+                  {/* Lapped cars report a line gap, not a gap to the leader. */}
+                  {retired
+                    ? "—"
+                    : row.lapsDown > 0
+                      ? `+${row.lapsDown} lap${row.lapsDown > 1 ? "s" : ""}`
+                      : (row.time ?? "—")}
                 </td>
                 <td className={cn(TD, "text-right tnum text-body-md text-ink")}>
                   {row.points || "—"}

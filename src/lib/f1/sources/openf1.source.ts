@@ -402,6 +402,9 @@ export class OpenF1TimingSource implements LiveTimingSource {
           lastLap: formatLapTime(lap?.last ?? null),
           bestLap: formatLapTime(lap?.best ?? null),
           lapsCompleted: lap?.count ?? null,
+          // OpenF1's interval field already expresses "+1 LAP" as a string,
+          // so there is no separate deficit to compute here.
+          lapsDown: 0,
           tyre: stint ? toCompound(stint.compound) : null,
           stintLaps:
             stint && lap?.count ? Math.max(0, lap.count - stint.lap_start + 1) : null,
