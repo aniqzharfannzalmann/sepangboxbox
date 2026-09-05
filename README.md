@@ -95,6 +95,32 @@ all covered by `npm run verify:apis`:
 - **The 2026 running is excluded.** It appears in the circuit's race list but
   has no result, and must never be counted as a win.
 
+## Circuit profiles
+
+`/circuits/[id]` covers all 23 rounds: races held, lap record, most successful
+drivers and constructors, and four characteristics measured from results rather
+than copied from published ratings — see
+[`src/lib/f1/circuit-stats.ts`](src/lib/f1/circuit-stats.ts) for why they are
+windowed to roughly the last twenty races rather than a circuit's whole history.
+
+### Track outlines
+
+```bash
+npm run maps:circuits           # all circuits
+npm run maps:circuits sepang    # one
+```
+
+Traced from OpenStreetMap into
+[`src/lib/f1/circuit-maps.json`](src/lib/f1/circuit-maps.json) and committed.
+Nothing queries Overpass at request time — outlines never change and Overpass is
+far too slow for it.
+
+**A circuit only gets a map if the traced geometry matches its published length
+to within 4%.** Fifteen of twenty-three pass, all within 0.5%. The rest — mostly
+street circuits, where OSM tags the roads as ordinary streets rather than
+`highway=raceway` — show no map at all, which is deliberate: fans know these
+tracks by shape, and a wrong outline would undermine everything else on the page.
+
 ## Previewing the timing view
 
 Sepang is round 16 and has not run, so `/live` shows a countdown and the

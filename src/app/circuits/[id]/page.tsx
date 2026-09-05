@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { StatusNotice } from "@/components/StatusNotice";
+import { CircuitMap } from "@/components/circuit/CircuitMap";
 import { RatingBar } from "@/components/circuit/RatingBar";
 import { Button } from "@/components/ui/Button";
 import {
@@ -137,6 +138,9 @@ export default async function CircuitPage({
               Fastest race lap by {p.lapRecord.driverName}, {p.lapRecord.season}.
             </p>
           )}
+
+          {/* Renders nothing when the circuit has no verified outline. */}
+          <CircuitMap circuitId={id} name={race.circuitName} />
         </Container>
       </section>
 
