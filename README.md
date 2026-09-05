@@ -77,6 +77,24 @@ Its per-endpoint cache windows are load-bearing, not politeness: the sponsor
 tier allows 60 requests/minute and polling all seven endpoints at 5s would be
 84/minute and would be throttled mid-race.
 
+## Sepang history
+
+`/sepang` carries every Malaysian Grand Prix held at the circuit between 1999
+and 2017 — winners, pole sitters, the lap record and the 2017 finish — from
+four Jolpica queries cached for a day, since none of it will ever change.
+
+Three things the data layer in
+[`src/lib/f1/sepang-history.ts`](src/lib/f1/sepang-history.ts) is careful about,
+all covered by `npm run verify:apis`:
+
+- **Tallies key on `driverId`, never on family name.** Sepang was won by
+  Michael Schumacher three times and by Ralf Schumacher once; counting by name
+  produces a four-time winner who does not exist.
+- **Pole data only exists from 2002.** The three earliest races render as
+  "pole not recorded" rather than blank.
+- **The 2026 running is excluded.** It appears in the circuit's race list but
+  has no result, and must never be counted as a win.
+
 ## Previewing the timing view
 
 Sepang is round 16 and has not run, so `/live` shows a countdown and the

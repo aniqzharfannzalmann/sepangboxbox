@@ -12,6 +12,7 @@ const NAV = [
   { href: "/schedule", label: "Schedule" },
   { href: "/results", label: "Results" },
   { href: "/compare", label: "Compare" },
+  { href: "/sepang", label: "Sepang" },
 ] as const;
 
 /** Wordmark. The Rosso Corsa bar is the brand mark — we do not ship a

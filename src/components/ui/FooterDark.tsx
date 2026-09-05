@@ -20,6 +20,7 @@ const COLUMNS = [
   {
     heading: "Sepang",
     links: [
+      { href: "/sepang", label: "Race history" },
       {
         href: "https://www.sepangcircuit.com",
         label: "Sepang Circuit",

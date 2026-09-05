@@ -13,7 +13,7 @@ import {
   SpecCell,
 } from "@/components/ui/primitives";
 import type { LiveTimingSource } from "@/lib/f1/sources/types";
-import { MYT_LABEL, formatFullMyt } from "@/lib/f1/time";
+import { MYT_LABEL, formatDuration, formatFullMyt } from "@/lib/f1/time";
 
 /*
  * Live Timing (PRD 7.3).
@@ -61,6 +61,13 @@ export async function LiveView({
     state.session?.kind === "fp1" ||
     state.session?.kind === "fp2" ||
     state.session?.kind === "fp3";
+
+  // Pit stops arrive keyed by driverId. The timing rows already carry proper
+  // names, so use them rather than printing "max_verstappen" at a reader.
+  const namesById = new Map(
+    (rows ?? []).map((r) => [r.driver.id, r.driver.familyName]),
+  );
+  const driverName = (id: string) => namesById.get(id) ?? id;
 
   const emptyReason = isPractice
     ? `${sessionLabel} timing is not published by this source at any point. Live practice timing needs OpenF1 access.`
@@ -186,27 +193,57 @@ export async function LiveView({
           />
         )}
 
-        {capabilities.pitLog && pitLog ? (
+        {/*
+          Three states, not two. The source may not support pit stops at all;
+          it may support them but have none for this session type; or it may
+          have them. Collapsing the middle case into "unsupported" would tell
+          a reader during qualifying that the data needs OpenF1, which is
+          false — Ergast simply records no stops outside a race.
+        */}
+        {!capabilities.pitLog ? (
+          <UnsupportedPanel
+            title="Pit stops"
+            reason="Pit entry, exit and stationary time are not available on the current source."
+          />
+        ) : pitLog === null ? (
+          <UnsupportedPanel
+            title="Pit stops"
+            reason="The pit stop log could not be loaded for this session."
+          />
+        ) : pitLog.length === 0 ? (
+          <UnsupportedPanel
+            title="Pit stops"
+            reason="No pit stops are recorded for this session — they are logged for races only."
+          />
+        ) : (
           <section className="border border-hairline p-md">
             <SectionLabel>Pit stops</SectionLabel>
             <ul className="mt-xs flex flex-col gap-xxs">
-              {pitLog.map((stop, i) => (
+              {[...pitLog]
+                // Latest first — during a race the newest stops are the news.
+                .sort((a, b) => b.lap - a.lap)
+                .slice(0, 12)
+                .map((stop, i) => (
                 <li
-                  key={`${stop.driverId}-${i}`}
+                  key={`${stop.driverId}-${stop.lap}-${i}`}
                   className="text-body-sm text-body"
                 >
-                  {stop.driverId} · lap {stop.lap}
-                  {stop.durationSeconds !== null &&
-                    ` · ${stop.durationSeconds.toFixed(1)}s`}
+                  <span className="text-ink">
+                    {driverName(stop.driverId)}
+                  </span>{" "}
+                  · lap {stop.lap}
+                  {formatDuration(stop.durationSeconds)
+                    ? ` · ${formatDuration(stop.durationSeconds)}`
+                    : ""}
                 </li>
               ))}
             </ul>
+            {pitLog.length > 12 && (
+              <p className="text-caption text-muted mt-xs">
+                {pitLog.length - 12} more
+              </p>
+            )}
           </section>
-        ) : (
-          <UnsupportedPanel
-            title="Pit stops"
-            reason="Pit entry, exit and stationary time come from OpenF1 live timing. Not available on the current source."
-          />
         )}
 
         {capabilities.raceControl && raceControl ? (

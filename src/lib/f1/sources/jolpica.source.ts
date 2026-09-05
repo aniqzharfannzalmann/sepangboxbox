@@ -1,7 +1,13 @@
 import "server-only";
 
-import { getQualifyingResult, getRaceResult, getRaceWeekend } from "../jolpica";
+import {
+  getPitStops,
+  getQualifyingResult,
+  getRaceResult,
+  getRaceWeekend,
+} from "../jolpica";
 import { getWeekendState } from "../session-windows";
+import { lapTimeToSeconds } from "../time";
 import type {
   LiveSessionState,
   PitStop,
@@ -29,7 +35,8 @@ const CAPABILITIES: SourceCapabilities = {
   gapToAhead: false,
   lastLap: false,
   tyres: false,
-  pitLog: false,
+  // Ergast has carried pit stops all along.
+  pitLog: true,
   raceControl: false,
   weather: false,
 };
@@ -41,14 +48,6 @@ const CAPABILITIES: SourceCapabilities = {
  * pending is worse than one that admits it is still settling.
  */
 const PROVISIONAL_MINUTES = 60;
-
-/** "1:11.163" or "58.221" to seconds. Null if it is not a lap time. */
-function lapTimeToSeconds(time: string | null): number | null {
-  if (!time) return null;
-  const m = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(time.trim());
-  if (!m) return null;
-  return (m[1] ? Number(m[1]) * 60 : 0) + Number(m[2]);
-}
 
 /**
  * Points the source at a weekend other than Sepang, and/or at a pretend clock.
@@ -208,8 +207,23 @@ export class JolpicaTimingSource implements LiveTimingSource {
     return null;
   }
 
+  /**
+   * Pit stops, for race sessions only. Ergast records none for practice or
+   * qualifying, so those return an empty array rather than null — "none for
+   * this session" is a different statement from "this source cannot supply
+   * them", and the UI says each differently.
+   */
   async getPitLog(): Promise<PitStop[] | null> {
-    return null;
+    const state = await this.getSessionState();
+    const session = state.session;
+    if (!session) return null;
+    if (session.kind !== "race" && session.kind !== "sprint") return [];
+
+    try {
+      return await getPitStops(state.weekend.season, state.weekend.round);
+    } catch {
+      return null;
+    }
   }
 
   async getRaceControl(): Promise<RaceControlMessage[] | null> {

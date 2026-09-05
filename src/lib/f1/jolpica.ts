@@ -14,8 +14,11 @@ import type {
   RaceResultRow,
   RaceWeekend,
   SessionKind,
+  PitStop,
   StandingsSnapshot,
 } from "./types";
+
+import { lapTimeToSeconds } from "./time";
 
 /**
  * Overridable so the fallback paths can be exercised for real — point it at a
@@ -44,6 +47,13 @@ const REVALIDATE_SECONDS = 300;
  * minutes and keep showing the same rows.
  */
 const LIVE_REVALIDATE_SECONDS = 60;
+
+/**
+ * Historical results are immutable — the 2004 Malaysian Grand Prix is not
+ * going to change. Caching them for a day keeps the Sepang heritage page
+ * essentially free against Jolpica's 500 requests/hour.
+ */
+export const HISTORY_REVALIDATE_SECONDS = 86_400;
 
 /** The race this app is built around. */
 export const SEPANG = { season: "2026", round: "16" } as const;
@@ -122,6 +132,15 @@ interface WireRace {
   Qualifying?: WireDateTime;
   Results?: WireResult[];
   QualifyingResults?: WireQualifyingResult[];
+  PitStops?: WirePitStop[];
+}
+
+interface WirePitStop {
+  driverId: string;
+  lap: string;
+  stop: string;
+  time: string;
+  duration: string;
 }
 
 interface WireDriverList {
@@ -369,10 +388,17 @@ export async function getRaceWeekend(
 export async function getRaceResult(
   season: string,
   round: string,
+  /**
+   * Defaults to the live window, because the common caller is a race that has
+   * just finished and may still be reclassified. A historical result should
+   * pass HISTORY_REVALIDATE_SECONDS — otherwise a nine-year-old race drags
+   * the whole page's revalidate down to a minute.
+   */
+  revalidate: number = LIVE_REVALIDATE_SECONDS,
 ): Promise<RaceResult | null> {
   const json = await get(
     `/${season}/${round}/results.json?limit=100`,
-    LIVE_REVALIDATE_SECONDS,
+    revalidate,
   );
   const race = json.MRData.RaceTable?.Races?.[0];
   if (!race?.Results?.length) return null;
@@ -495,4 +521,120 @@ export function summariseDriverSeason(
     averageFinish: mean(finishes),
     averageGrid: mean(grids),
   };
+}
+
+/* ------------------------------------------------------------------ */
+/* Circuit history                                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One historical running of a race at a circuit.
+ *
+ * `driverId` and `constructorId` are carried deliberately: tallies must be
+ * keyed on them, never on family name. Sepang has been won by both Michael
+ * and Ralf Schumacher, and counting by name merges them into one four-time
+ * winner who does not exist.
+ */
+export interface CircuitRaceEntry {
+  season: string;
+  round: string;
+  raceName: string;
+  driverId: string;
+  driverName: string;
+  constructorId: string;
+  constructorName: string;
+  /** Pole lap, or the race's fastest lap, depending on the query. */
+  time: string | null;
+}
+
+function toCircuitEntry(
+  race: WireRace,
+  driver: WireDriver,
+  constructor: WireConstructor,
+  time: string | null,
+): CircuitRaceEntry {
+  return {
+    season: race.season,
+    round: race.round,
+    raceName: race.raceName,
+    driverId: driver.driverId,
+    driverName: `${driver.givenName} ${driver.familyName}`,
+    constructorId: constructor.constructorId,
+    constructorName: constructor.name,
+    time,
+  };
+}
+
+/** Every winner at a circuit, oldest first. */
+export async function getCircuitWinners(
+  circuitId: string,
+): Promise<CircuitRaceEntry[]> {
+  const json = await get(
+    `/circuits/${circuitId}/results/1.json?limit=100`,
+    HISTORY_REVALIDATE_SECONDS,
+  );
+  return (json.MRData.RaceTable?.Races ?? []).flatMap((race) => {
+    const r = race.Results?.[0];
+    return r ? [toCircuitEntry(race, r.Driver, r.Constructor, r.Time?.time ?? null)] : [];
+  });
+}
+
+/**
+ * Every pole sitter at a circuit. Ergast has no qualifying data before 2002,
+ * so this is shorter than the winners list and callers must not assume the
+ * two line up.
+ */
+export async function getCircuitPoles(
+  circuitId: string,
+): Promise<CircuitRaceEntry[]> {
+  const json = await get(
+    `/circuits/${circuitId}/qualifying/1.json?limit=100`,
+    HISTORY_REVALIDATE_SECONDS,
+  );
+  return (json.MRData.RaceTable?.Races ?? []).flatMap((race) => {
+    const q = race.QualifyingResults?.[0];
+    if (!q) return [];
+    return [toCircuitEntry(race, q.Driver, q.Constructor, q.Q3 || q.Q2 || q.Q1 || null)];
+  });
+}
+
+/** The fastest lap of each race at a circuit. Sparser still than poles. */
+export async function getCircuitFastestLaps(
+  circuitId: string,
+): Promise<CircuitRaceEntry[]> {
+  const json = await get(
+    `/circuits/${circuitId}/fastest/1/results.json?limit=100`,
+    HISTORY_REVALIDATE_SECONDS,
+  );
+  return (json.MRData.RaceTable?.Races ?? []).flatMap((race) => {
+    const r = race.Results?.[0];
+    const time = r?.FastestLap?.Time?.time ?? null;
+    return r && time ? [toCircuitEntry(race, r.Driver, r.Constructor, time)] : [];
+  });
+}
+
+/**
+ * Pit stops for a race.
+ *
+ * Ergast has always carried these; the live page previously claimed they
+ * required OpenF1, which was simply wrong. Durations arrive as "12.338" or
+ * "26:11.504" — the long ones are real, and mean the field sat in the pit
+ * lane under a red flag.
+ */
+export async function getPitStops(
+  season: string,
+  round: string,
+): Promise<PitStop[]> {
+  const json = await get(
+    `/${season}/${round}/pitstops.json?limit=100`,
+    LIVE_REVALIDATE_SECONDS,
+  );
+  const stops = json.MRData.RaceTable?.Races?.[0]?.PitStops ?? [];
+
+  return stops.map((p) => ({
+    driverId: p.driverId,
+    lap: Number(p.lap),
+    durationSeconds: lapTimeToSeconds(p.duration),
+    atIso: null,
+  }));
 }

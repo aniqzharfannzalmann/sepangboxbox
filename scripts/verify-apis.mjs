@@ -124,6 +124,91 @@ try {
 
 /* ---------------------------------------------------------------- */
 
+console.log("\nSepang history");
+try {
+  const winners =
+    (await json(`${JOLPICA}/circuits/sepang/results/1.json?limit=100`)).MRData
+      ?.RaceTable?.Races ?? [];
+
+  check(
+    "nineteen completed Malaysian GPs",
+    winners.length === 19,
+    `got ${winners.length}`,
+  );
+
+  // The 2026 running has no result yet and must never count as a win.
+  check(
+    "2026 is not in the winners list",
+    !winners.some((r) => r.season === "2026"),
+  );
+
+  // The trap: Sepang was won by Michael Schumacher three times and by his
+  // brother Ralf once. Tallying by family name invents a four-time winner.
+  const ralf = winners.find((r) => r.season === "2002");
+  check(
+    "2002 was won by Ralf Schumacher",
+    ralf?.Results?.[0]?.Driver?.driverId === "ralf_schumacher",
+    `got ${ralf?.Results?.[0]?.Driver?.driverId}`,
+  );
+
+  const byId = {};
+  for (const r of winners) {
+    const id = r.Results[0].Driver.driverId;
+    byId[id] = (byId[id] ?? 0) + 1;
+  }
+  check("Vettel leads with 4 wins", byId.vettel === 4, `got ${byId.vettel}`);
+  check(
+    "Michael Schumacher has 3, not 4",
+    byId.michael_schumacher === 3,
+    `got ${byId.michael_schumacher}`,
+  );
+
+  const poles =
+    (await json(`${JOLPICA}/circuits/sepang/qualifying/1.json?limit=100`))
+      .MRData?.RaceTable?.Races ?? [];
+  check(
+    "pole data covers 16 of the 19 races",
+    poles.length === 16,
+    `got ${poles.length} - the page says none were recorded before 2002`,
+  );
+
+  const fastest =
+    (await json(`${JOLPICA}/circuits/sepang/fastest/1/results.json?limit=100`))
+      .MRData?.RaceTable?.Races ?? [];
+  const times = fastest
+    .map((r) => r.Results?.[0]?.FastestLap?.Time?.time)
+    .filter(Boolean)
+    .map((t) => {
+      const m = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(t);
+      return m ? { t, s: (m[1] ? Number(m[1]) * 60 : 0) + Number(m[2]) } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.s - b.s);
+  check("lap record is 1:34.080", times[0]?.t === "1:34.080", `got ${times[0]?.t}`);
+} catch (error) {
+  check("Sepang history requests", false, error.message);
+}
+
+console.log("\nPit stops");
+try {
+  const stops =
+    (await json(`${JOLPICA}/2026/12/pitstops.json?limit=100`)).MRData?.RaceTable
+      ?.Races?.[0]?.PitStops ?? [];
+  // Ergast has always carried these; the live page once wrongly said they
+  // needed OpenF1. If this ever empties, that panel silently goes quiet.
+  check(
+    "Jolpica serves pit stops for a race",
+    stops.length > 0,
+    `got ${stops.length}`,
+  );
+  check(
+    "stops carry driver, lap and duration",
+    Boolean(stops[0]?.driverId && stops[0]?.lap && stops[0]?.duration),
+  );
+} catch (error) {
+  check("pit stop request", false, error.message);
+}
+
 console.log("\nOpenF1 access tier");
 try {
   const response = await fetch(`${OPENF1}/sessions?year=2024&session_name=Race`);

@@ -97,3 +97,41 @@ export function countdownFrom(targetIso: string, now: number): Countdown {
 }
 
 export const pad2 = (n: number): string => String(n).padStart(2, "0");
+
+/**
+ * "1:34.080" or "58.221" to seconds. Null if it is not a lap time.
+ *
+ * Shared by qualifying gap-to-pole and by the Sepang lap record, which need
+ * the same parsing — two copies would be two places to get it wrong.
+ */
+export function lapTimeToSeconds(time: string | null | undefined): number | null {
+  if (!time) return null;
+  const m = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(time.trim());
+  if (!m) return null;
+  return (m[1] ? Number(m[1]) * 60 : 0) + Number(m[2]);
+}
+
+/**
+ * Seconds back to a readable duration: "12.3s", or "26:11" once it passes a
+ * minute.
+ *
+ * Pit stop durations span both. A normal stop is around twelve seconds, but a
+ * field held in the pit lane under a red flag records twenty-odd minutes, and
+ * printing that as "1571.5s" is accurate and useless.
+ */
+export function formatDuration(
+  seconds: number | null | undefined,
+  decimals = 1,
+): string | null {
+  if (seconds === null || seconds === undefined || !Number.isFinite(seconds)) {
+    return null;
+  }
+  if (seconds < 60) return `${seconds.toFixed(decimals)}s`;
+
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.round(seconds - minutes * 60);
+  // Rounding can carry into the next minute.
+  return rest === 60
+    ? `${minutes + 1}:00`
+    : `${minutes}:${String(rest).padStart(2, "0")}`;
+}
