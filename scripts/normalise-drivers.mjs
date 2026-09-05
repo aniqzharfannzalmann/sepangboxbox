@@ -45,20 +45,27 @@ const ALPHA_MIN = 0.5;
 const COLOUR_DISTANCE = 40;
 
 /**
- * How much of the crop sits below the shoulder line, as a multiple of the
- * head-to-shoulder distance, and how much air is left above the crown.
+ * How much of the square the head itself should fill, and how much air sits
+ * above the crown as a fraction of head height.
  *
- * Tuned so the square holds head and shoulders rather than a floating head:
- * portraits that crop tight to the jaw look like mugshots, and ones that
- * include the chest lose the face at 32px in a standings row.
+ * Framing a portrait by the head means the head is the same size in every one
+ * of them, which is the whole point of doing this rather than resizing whole
+ * pictures. Around 60% holds head and shoulders: tighter reads as a mugshot,
+ * looser loses the face at 36px in a standings row.
  */
-const BELOW_SHOULDER = 0.45;
-const ABOVE_CROWN = 0.18;
+const HEAD_IN_FRAME = 0.62;
+const ABOVE_CROWN = 0.12;
 
-/** The row extent that says shoulders have started, as a multiple of head width. */
-const SHOULDER_RATIO = 1.6;
+/**
+ * A row this much narrower than the head at its widest is the neck.
+ *
+ * Below this and the narrowing is just jawline; the neck on these is a little
+ * over half head width.
+ */
+const NECK_RATIO = 0.85;
 
-const IMAGE = /\.(png|jpe?g|webp)$/i;
+/** avif included because that is what the supplied cut-outs arrived as. */
+const IMAGE = /\.(png|jpe?g|webp|avif)$/i;
 
 function readOverrides() {
   if (!existsSync(OVERRIDES)) return {};
@@ -122,16 +129,21 @@ function rowExtents({ data, info }) {
  * the whole body — spread arms or a wide stance move it well off the head —
  * and its top is the crown, which says nothing about how far down to cut.
  *
- * So: take the head's width from the topmost rows, which contain only head.
- * Then walk down until a row is meaningfully wider than that, which is where
- * the shoulders begin. Head width and the head-to-shoulder distance together
- * give both the centre and the scale, and neither depends on the body below.
+ * So it finds the neck. Reading down from the crown, a row's width grows to
+ * the widest part of the head, narrows to the neck, then grows again into the
+ * shoulders — and that narrowest point is the bottom of the head. Crown to
+ * neck is the head's height, and the rows above the neck are the only ones
+ * that describe where the head is horizontally.
+ *
+ * Anchoring on the shoulders instead does not work, which is what this first
+ * did: a widening test fires somewhere down the deltoid rather than at the
+ * joint, so the box came out half again too big, and averaging in the shoulder
+ * rows dragged the centre off the face towards whichever arm was further out.
  *
  * What defeats it, in order of likelihood: a raised arm level with the head,
- * which widens the top rows so the head reads wider than it is; a busy
- * background, which makes everything subject; and a hand held above the head,
- * which moves the crown. All three are visible instantly on the contact sheet
- * and fixable with an entry in driver-crops.json.
+ * which widens the top rows; a busy background, which makes everything
+ * subject; and a hand above the head, which moves the crown. All three are
+ * obvious on the contact sheet and fixable in driver-crops.json.
  */
 function findHeadCrop(rows, width, height) {
   const present = rows
@@ -143,46 +155,77 @@ function findHeadCrop(rows, width, height) {
   const bottom = present[present.length - 1].y;
   const subjectHeight = bottom - top + 1;
 
-  // The head's own width, from rows near the crown. A slice rather than one
-  // row, because the very top row of a head is a few pixels of hair.
-  const sampleDepth = Math.max(3, Math.round(subjectHeight * 0.04));
-  const sample = present
-    .filter((r) => r.y >= top && r.y < top + sampleDepth)
-    .map((r) => r.width)
-    .sort((a, b) => a - b);
-  if (sample.length === 0) return null;
-  const headWidth = sample[Math.floor(sample.length / 2)];
+  // Everything of interest is in the upper third. Past that is torso, and a
+  // second narrowing at the waist would be mistaken for a neck.
+  const window = present.filter(
+    (r) => r.y >= top && r.y <= top + Math.round(subjectHeight * 0.33),
+  );
+  if (window.length < 3) return null;
 
-  // Walk down to the shoulders. Capped at a third of the subject: past that
-  // something has gone wrong and a proportional fallback is safer than a
-  // confident wrong answer.
-  const limit = top + Math.round(subjectHeight * 0.33);
-  let shoulderY = null;
-  for (const r of present) {
-    if (r.y <= top + sampleDepth) continue;
-    if (r.y > limit) break;
-    if (r.width > headWidth * SHOULDER_RATIO) {
-      shoulderY = r.y;
-      break;
+  /*
+   * Smooth before reading any of this off. Row width is noisy at the pixel
+   * scale — a few strands of hair, a collar, an antialiased edge — and both
+   * the peak and the trough below are found by comparing neighbours, so
+   * unsmoothed widths find a "peak" three pixels down the parting. Averaging
+   * over 1% of subject height is far below the head-to-neck distance and well
+   * above that noise.
+   */
+  const span = Math.max(2, Math.round(subjectHeight * 0.01));
+  const smooth = window.map((_, i) => {
+    let sum = 0;
+    let n = 0;
+    for (let j = Math.max(0, i - span); j <= Math.min(window.length - 1, i + span); j++) {
+      sum += window[j].width;
+      n++;
     }
-  }
-  const headToShoulder = (shoulderY ?? top + Math.round(subjectHeight * 0.2)) - top;
+    return sum / n;
+  });
 
-  // Centre on the head, not the body.
-  const headRows = present.filter((r) => r.y >= top && r.y <= top + headToShoulder);
+  /*
+   * The head's widest point is the FIRST peak, not the widest row here — the
+   * shoulders are always wider than the head, so a plain maximum finds them
+   * and leaves no neck below to find. Read down from the crown until the width
+   * has fallen appreciably off its running peak.
+   *
+   * Starting a little below the crown, because the top of a head is a couple
+   * of pixels of hair and is not a width worth comparing against.
+   */
+  let peak = window.findIndex((r) => r.y > top + subjectHeight * 0.02);
+  if (peak < 0) peak = 0;
+  for (let i = peak; i < smooth.length; i++) {
+    if (smooth[i] > smooth[peak]) peak = i;
+    else if (smooth[i] < smooth[peak] * 0.9) break;
+  }
+
+  // The neck: the trough below that peak, confirmed by the shoulders widening
+  // again afterwards.
+  let neck = null;
+  for (let i = peak + 1; i < smooth.length; i++) {
+    if (neck === null || smooth[i] < smooth[neck]) neck = i;
+    if (smooth[i] > smooth[neck] * 1.2) break;
+  }
+
+  const measured = neck !== null && smooth[neck] <= smooth[peak] * NECK_RATIO;
+  const headBottom = measured
+    ? window[neck].y
+    : top + Math.round(subjectHeight * 0.14);
+  const headHeight = Math.max(1, headBottom - top);
+
+  // Horizontal centre from the head's own rows only.
+  const headRows = present.filter((r) => r.y >= top && r.y <= headBottom);
   const headLeft = Math.min(...headRows.map((r) => r.left));
   const headRight = Math.max(...headRows.map((r) => r.right));
   const centreX = (headLeft + headRight) / 2;
 
-  const size = Math.round(headToShoulder * (1 + BELOW_SHOULDER + ABOVE_CROWN));
-  const cropTop = Math.round(top - headToShoulder * ABOVE_CROWN);
+  const size = Math.round(headHeight / HEAD_IN_FRAME);
+  const cropTop = Math.round(top - headHeight * ABOVE_CROWN);
   const cropLeft = Math.round(centreX - size / 2);
 
   return clampBox(
     { left: cropLeft, top: cropTop, size },
     width,
     height,
-    shoulderY === null ? "proportional" : "measured",
+    measured ? "measured" : "proportional",
   );
 }
 
