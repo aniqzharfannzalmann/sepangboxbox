@@ -1,3 +1,4 @@
+import { cn } from "@/lib/cn";
 import maps from "@/lib/f1/circuit-maps.json";
 
 export interface CircuitPath {
@@ -58,12 +59,44 @@ export function humanType(type: string): string {
  */
 const STROKE_SCALE = 0.7;
 
-export function CircuitMap({
+/**
+ * The drawing on its own, with no caption and no margin of its own.
+ *
+ * Separate from CircuitMap because the same artwork has to work at two very
+ * different sizes: one large plate on a circuit page, and 23 thumbnails on the
+ * index, where a repeated attribution line under every card would be noise.
+ * The site footer carries that credit on every page, which is what CC BY 4.0
+ * asks for.
+ *
+ * The caller sets the height, since what "too tall" means depends entirely on
+ * whether this is the subject of the page or a tile in a grid.
+ */
+export function CircuitOutline({
   circuitId,
   name,
+  className,
+  strokePx,
 }: {
   circuitId: string;
   name: string;
+  className?: string;
+  /**
+   * Draw the track at this many screen pixels, whatever the drawing's scale.
+   *
+   * For a set of these side by side. Stroke width is in viewBox units, and the
+   * viewBox is cropped to each drawing, so how thick a line looks depends
+   * entirely on how much that particular circuit had to be scaled to fit —
+   * measured across the 23, apparent stroke ran 2.77x, from Miami at 10.8px to
+   * Interlagos at 3.9px, because a 2.5:1 shape fits a wide box best and is
+   * therefore blown up most. That reads as 23 drawings at different weights
+   * rather than one set.
+   *
+   * `vector-effect: non-scaling-stroke` takes the stroke out of the coordinate
+   * system entirely, so the number below is screen pixels and every circuit
+   * gets the same line. Left unset on the full-size plate, where there is only
+   * ever one drawing on screen and nothing to be inconsistent with.
+   */
+  strokePx?: number;
 }) {
   const map = getCircuitMap(circuitId);
   if (!map) return null;
@@ -73,34 +106,57 @@ export function CircuitMap({
   const trackWidth = Math.max(...map.paths.map((p) => p.strokeWidth));
 
   return (
+    <svg
+      viewBox={map.viewBox}
+      role="img"
+      aria-label={`Outline of ${name}: ${map.turns} turns, ${map.lengthKm} km, ${humanDirection(map.direction).toLowerCase()}`}
+      // The viewBox is cropped to the drawing, so aspect ratios run from 0.39
+      // (Montreal) to 2.52 (Miami). Full width with a height cap lets a wide
+      // circuit fill the space and keeps a tall one from running away.
+      className={cn("w-full h-auto", className)}
+    >
+      {map.paths.map((path, i) => {
+        const isTrack = !path.filled && path.strokeWidth === trackWidth;
+        const colour = isTrack ? "var(--color-primary)" : "var(--color-ink)";
+        return (
+          <path
+            key={i}
+            d={path.d}
+            fill={path.filled ? colour : "none"}
+            stroke={path.filled ? "none" : colour}
+            strokeWidth={
+              strokePx === undefined
+                ? path.strokeWidth * STROKE_SCALE
+                : // Markings stay lighter than the track they sit on, in the
+                  // same proportion the artwork drew them.
+                  Math.max(1, strokePx * (path.strokeWidth / trackWidth))
+            }
+            vectorEffect={strokePx === undefined ? undefined : "non-scaling-stroke"}
+            strokeLinecap={path.linecap as "round" | "square" | "butt"}
+            strokeLinejoin={path.linejoin as "round" | "bevel" | "miter"}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+export function CircuitMap({
+  circuitId,
+  name,
+}: {
+  circuitId: string;
+  name: string;
+}) {
+  if (!getCircuitMap(circuitId)) return null;
+
+  return (
     <figure className="mt-lg">
-      <svg
-        viewBox={map.viewBox}
-        role="img"
-        aria-label={`Outline of ${name}: ${map.turns} turns, ${map.lengthKm} km, ${humanDirection(map.direction).toLowerCase()}`}
-        // The viewBox is cropped to the drawing, so aspect ratios run from
-        // 0.39 (Montreal) to 2.52 (Miami). Full width with a height cap lets a
-        // wide circuit fill the space and keeps a tall one from running away.
-        className="w-full h-auto max-h-[420px]"
-      >
-        {map.paths.map((path, i) => {
-          const isTrack = !path.filled && path.strokeWidth === trackWidth;
-          const colour = isTrack
-            ? "var(--color-primary)"
-            : "var(--color-ink)";
-          return (
-            <path
-              key={i}
-              d={path.d}
-              fill={path.filled ? colour : "none"}
-              stroke={path.filled ? "none" : colour}
-              strokeWidth={path.strokeWidth * STROKE_SCALE}
-              strokeLinecap={path.linecap as "round" | "square" | "butt"}
-              strokeLinejoin={path.linejoin as "round" | "bevel" | "miter"}
-            />
-          );
-        })}
-      </svg>
+      <CircuitOutline
+        circuitId={circuitId}
+        name={name}
+        className="max-h-[420px]"
+      />
       <figcaption className="text-caption text-muted mt-xs">
         Circuit artwork from{" "}
         <a

@@ -1,11 +1,17 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StatusNotice } from "@/components/StatusNotice";
+import {
+  CircuitOutline,
+  getCircuitMap,
+} from "@/components/circuit/CircuitMap";
 import { TeamStripe } from "@/components/team/TeamStripe";
 import { Button } from "@/components/ui/Button";
 import { Container, Hairline, SectionLabel } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { SEPANG, getQualifyingResult, getRaceResult } from "@/lib/f1/jolpica";
 import type { QualifyingResult, RaceResult } from "@/lib/f1/types";
+import { getSeasonScheduleSafe } from "@/lib/f1/weekend";
 
 export const revalidate = 300;
 
@@ -196,6 +202,19 @@ export default async function RoundResultPage({
 
   const { race, qualifying, failed } = await load(round);
 
+  /*
+   * Which circuit this round was held at.
+   *
+   * Taken from the schedule rather than from the results, because the results
+   * do not carry it: RaceResult has a circuitName but no id, and
+   * QualifyingResult has neither. Resolving it here means one mechanism that
+   * works whether the race, the qualifying, or both have been published — and
+   * getSeasonScheduleSafe is already cached and shared with the pages that
+   * loaded it first.
+   */
+  const season = await getSeasonScheduleSafe();
+  const weekend = season.data.find((r) => r.round === round) ?? null;
+
   if (failed) {
     return (
       <Container className="py-xxl">
@@ -220,6 +239,38 @@ export default async function RoundResultPage({
       <h1 className="text-display-lg text-ink mt-xs">{title}</h1>
       {race && (
         <p className="text-body-md text-body mt-xs">{race.circuitName}</p>
+      )}
+
+      {/*
+        The track this happened on. A completed round used to dead-end in its
+        classification with no way back to the circuit at all, which is the
+        one piece of context that makes a result mean something — a 19-turn
+        street circuit and a 4.3km permanent one produce different races.
+      */}
+      {weekend && getCircuitMap(weekend.circuitId) && (
+        <Link
+          href={`/circuits/${weekend.circuitId}`}
+          className="flex flex-wrap items-center gap-md mt-lg border border-hairline p-md hover:bg-canvas-elevated transition-colors"
+        >
+          <CircuitOutline
+            circuitId={weekend.circuitId}
+            name={weekend.circuitName}
+            className="max-h-[120px] w-auto max-w-[240px]"
+            strokePx={3}
+          />
+          <span className="flex-1 min-w-0">
+            <SectionLabel>The circuit</SectionLabel>
+            <span className="block text-body-md text-ink mt-xxs">
+              {weekend.circuitName}
+            </span>
+            <span className="block text-caption text-muted mt-xxxs">
+              {weekend.locality}, {weekend.country}
+            </span>
+            <span className="block text-caption text-primary mt-xs">
+              Circuit guide →
+            </span>
+          </span>
+        </Link>
       )}
 
       {race ? (

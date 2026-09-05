@@ -253,14 +253,31 @@ export default async function SchedulePage() {
           <h2 className="text-display-md text-ink mt-xxs">
             {done.length} {done.length === 1 ? "round" : "rounds"} run
           </h2>
+          {/*
+            Two links per row, side by side rather than nested — a completed
+            round has two things worth reaching and an anchor cannot contain
+            another. The results stay the primary destination, which is what
+            someone clicking a finished race almost always wants; the circuit
+            used to be reachable only while the race was still to come, so it
+            fell out of the app the moment it had been run.
+          */}
           <ul className="mt-md">
             {done.map((race) => (
-              <li key={race.round} className="border-b border-hairline">
+              <li
+                key={race.round}
+                className="flex items-baseline gap-xs border-b border-hairline opacity-70 hover:opacity-100 transition-opacity"
+              >
                 <Link
                   href={`/results/${race.round}`}
-                  className="flex items-baseline gap-xs py-sm opacity-70 hover:opacity-100 hover:bg-canvas-elevated transition-all"
+                  className="flex flex-1 min-w-0 items-baseline gap-xs py-sm hover:bg-canvas-elevated transition-colors"
                 >
                   <RoundHeading race={race} />
+                </Link>
+                <Link
+                  href={`/circuits/${race.circuitId}`}
+                  className="text-caption text-muted hover:text-ink shrink-0 py-sm px-xxs transition-colors"
+                >
+                  Circuit
                 </Link>
               </li>
             ))}
