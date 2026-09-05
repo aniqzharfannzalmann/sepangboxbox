@@ -50,6 +50,14 @@ export function humanType(type: string): string {
  * tokens. The track takes Rosso Corsa; the start line and marker take ink, so
  * they read against it rather than disappearing into it.
  */
+/**
+ * The artwork is drawn with a stroke sized for a 500-unit square. Cropping the
+ * viewBox to the drawing makes everything render larger, which left the track
+ * heavy enough that tight sections merged into one another. Thinning it opens
+ * those back up without making the line spindly.
+ */
+const STROKE_SCALE = 0.7;
+
 export function CircuitMap({
   circuitId,
   name,
@@ -70,7 +78,10 @@ export function CircuitMap({
         viewBox={map.viewBox}
         role="img"
         aria-label={`Outline of ${name}: ${map.turns} turns, ${map.lengthKm} km, ${humanDirection(map.direction).toLowerCase()}`}
-        className="w-full h-auto max-h-[400px]"
+        // The viewBox is cropped to the drawing, so aspect ratios run from
+        // 0.39 (Montreal) to 2.52 (Miami). Full width with a height cap lets a
+        // wide circuit fill the space and keeps a tall one from running away.
+        className="w-full h-auto max-h-[420px]"
       >
         {map.paths.map((path, i) => {
           const isTrack = !path.filled && path.strokeWidth === trackWidth;
@@ -83,7 +94,7 @@ export function CircuitMap({
               d={path.d}
               fill={path.filled ? colour : "none"}
               stroke={path.filled ? "none" : colour}
-              strokeWidth={path.strokeWidth}
+              strokeWidth={path.strokeWidth * STROKE_SCALE}
               strokeLinecap={path.linecap as "round" | "square" | "butt"}
               strokeLinejoin={path.linejoin as "round" | "bevel" | "miter"}
             />

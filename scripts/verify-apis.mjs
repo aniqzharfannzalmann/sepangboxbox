@@ -301,6 +301,31 @@ try {
     bare.length === 0,
     bare.length ? `only an outline for ${bare.join(", ")}` : "3 paths each",
   );
+
+  // The viewBox is cropped to the drawing by a path parser at import time. A
+  // bug in it once produced boxes 750 units wide on a 500-unit canvas, which
+  // renders as a tiny circuit adrift in empty space. Bounds that escape the
+  // canvas mean the parser is wrong again.
+  const escaped = Object.entries(maps).filter(([, m]) => {
+    const [x, y, w, h] = m.viewBox.split(" ").map(Number);
+    return x < -30 || y < -30 || w > 540 || h > 540 || w <= 0 || h <= 0;
+  });
+  check(
+    "every viewBox stays inside the source canvas",
+    escaped.length === 0,
+    escaped.length ? escaped.map(([id, m]) => `${id}: ${m.viewBox}`).join("; ") : "",
+  );
+
+  // Cropping is the whole point — an uncropped square box wastes up to half
+  // the frame on circuits like Madrid, which is 94% wide but 57% tall.
+  const uncropped = Object.entries(maps)
+    .filter(([, m]) => m.viewBox === "0 0 500 500")
+    .map(([id]) => id);
+  check(
+    "viewBoxes are cropped to the drawing",
+    uncropped.length === 0,
+    uncropped.length ? `still square: ${uncropped.join(", ")}` : "",
+  );
 } catch (error) {
   check("circuit map data", false, error.message);
 }

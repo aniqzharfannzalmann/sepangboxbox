@@ -158,13 +158,89 @@ function extractPaths(svg) {
 
   if (paths.length === 0) throw new Error("no path data");
 
-  const boxW = /width="(\d+)"/.exec(svg)?.[1] ?? "500";
-  const boxH = /height="(\d+)"/.exec(svg)?.[1] ?? boxW;
+  // The assets are drawn on a square 500x500 canvas, but almost no circuit is
+  // square: Madrid fills 94% of the width and 57% of the height, so nearly
+  // half the frame is empty and the drawing renders small. Crop the viewBox to
+  // what is actually drawn, padded by half the widest stroke so the line is
+  // not clipped, and the map fills its space in both directions.
+  const boxes = paths.map((p) => pathBounds(p.d));
+  const pad = Math.max(...paths.map((p) => p.strokeWidth)) / 2 + 2;
+  const minX = Math.min(...boxes.map((b) => b[0])) - pad;
+  const minY = Math.min(...boxes.map((b) => b[1])) - pad;
+  const maxX = Math.max(...boxes.map((b) => b[2])) + pad;
+  const maxY = Math.max(...boxes.map((b) => b[3])) + pad;
+  const round = (n) => Math.round(n * 10) / 10;
+
   return {
     paths,
-    // The assets carry no viewBox, only width/height on a square canvas.
-    viewBox: /viewBox="([^"]+)"/.exec(svg)?.[1] ?? `0 0 ${boxW} ${boxH}`,
+    viewBox: `${round(minX)} ${round(minY)} ${round(maxX - minX)} ${round(maxY - minY)}`,
   };
+}
+
+/**
+ * Rough bounds of a path.
+ *
+ * A cubic bezier is contained by its control points, so taking the extremes of
+ * every coordinate gives a box that is correct and slightly generous — which
+ * is the safe direction when it decides the crop.
+ */
+function pathBounds(d) {
+  const ARGS = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0 };
+  // SVG packs numbers: ".114.009" is two of them, so the pattern has to be
+  // able to start at a dot and stop at the next one.
+  const tokens =
+    d.match(/[MmLlHhVvCcSsQqTtAaZz]|-?\d*\.?\d+(?:[eE][-+]?\d+)?/g) ?? [];
+
+  let x = 0;
+  let y = 0;
+  let cmd = "M";
+  const xs = [];
+  const ys = [];
+
+  for (let i = 0; i < tokens.length; ) {
+    if (/[A-Za-z]/.test(tokens[i])) {
+      cmd = tokens[i];
+      i += 1;
+      if (cmd.toUpperCase() === "Z") continue;
+    }
+    const upper = cmd.toUpperCase();
+    const relative = cmd === cmd.toLowerCase();
+    const count = ARGS[upper];
+    const values = tokens.slice(i, i + count).map(Number);
+    if (values.length < count) break;
+    i += count;
+
+    let points;
+    if (upper === "H") points = [[values[0], null]];
+    else if (upper === "V") points = [[null, values[0]]];
+    else if (upper === "A") points = [[values[5], values[6]]];
+    else {
+      points = Array.from({ length: count / 2 }, (_, k) => [
+        values[k * 2],
+        values[k * 2 + 1],
+      ]);
+    }
+
+    // Every pair in a command is relative to the point the command started
+    // from — not to the pair before it. Accumulating them makes the pen drift
+    // and the bounds blow past the canvas.
+    let lastX = x;
+    let lastY = y;
+    for (const [dx, dy] of points) {
+      lastX = dx === null ? x : relative ? x + dx : dx;
+      lastY = dy === null ? y : relative ? y + dy : dy;
+      xs.push(lastX);
+      ys.push(lastY);
+    }
+    x = lastX;
+    y = lastY;
+
+    // A repeated coordinate pair after M continues the subpath as L.
+    if (cmd === "M") cmd = "L";
+    if (cmd === "m") cmd = "l";
+  }
+
+  return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
 }
 
 /* ------------------------------------------------------------------ */
