@@ -1,5 +1,6 @@
 import { Countdown } from "@/components/Countdown";
 import { StatusNotice } from "@/components/StatusNotice";
+import { TeamStripe } from "@/components/team/TeamStripe";
 import { Button } from "@/components/ui/Button";
 import {
   BadgePill,
@@ -105,7 +106,19 @@ function TopFive({
   unavailable,
 }: {
   title: string;
-  rows: Array<{ key: string; position: number; name: string; sub: string; points: number }>;
+  /**
+   * `constructorId` is separate from `key` on purpose: on the drivers card the
+   * key is the driver's id, so there is no team id to reuse. Rows without one
+   * simply render no stripe.
+   */
+  rows: Array<{
+    key: string;
+    position: number;
+    name: string;
+    sub: string;
+    points: number;
+    constructorId?: string;
+  }>;
   href: "/standings";
   unavailable: boolean;
 }) {
@@ -138,9 +151,17 @@ function TopFive({
               >
                 {row.position}
               </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-body-md text-ink truncate">{row.name}</p>
-                <p className="text-caption text-muted truncate">{row.sub}</p>
+              {/* An inner stretch context, so the stripe can take the height
+                  of the two lines without disturbing the baseline alignment
+                  of the position and points either side of it. */}
+              <div className="flex-1 min-w-0 flex items-stretch gap-xs">
+                {row.constructorId && (
+                  <TeamStripe constructorId={row.constructorId} />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-body-md text-ink truncate">{row.name}</p>
+                  <p className="text-caption text-muted truncate">{row.sub}</p>
+                </div>
               </div>
               <span className="text-title-sm tnum text-ink shrink-0">
                 {row.points}
@@ -237,6 +258,7 @@ export default async function Home() {
             unavailable={!constructors.data}
             rows={(constructors.data?.entries ?? []).slice(0, 5).map((e) => ({
               key: e.constructor.id,
+              constructorId: e.constructor.id,
               position: e.position,
               name: e.constructor.name,
               sub: e.constructor.nationality,

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { StatusNotice } from "@/components/StatusNotice";
+import { TeamStripe } from "@/components/team/TeamStripe";
 import { Button } from "@/components/ui/Button";
 import { Container, Hairline, SectionLabel } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
@@ -80,11 +81,18 @@ function RaceTable({ result }: { result: RaceResult }) {
                   </span>
                 </td>
                 <td className={TD}>
-                  <span className="text-body-md text-ink">
-                    {row.driver.fullName}
-                  </span>
-                  <span className="block text-caption text-muted">
-                    {row.constructor.name} · {row.status}
+                  {/* The stripe sits inside the row's opacity, so a retired
+                      car dims its livery along with its name. */}
+                  <span className="flex items-stretch gap-xs">
+                    <TeamStripe constructorId={row.constructor.id} />
+                    <span className="block">
+                      <span className="text-body-md text-ink">
+                        {row.driver.fullName}
+                      </span>
+                      <span className="block text-caption text-muted">
+                        {row.constructor.name} · {row.status}
+                      </span>
+                    </span>
                   </span>
                 </td>
                 <td className={cn(TD, "text-right tnum text-body-md text-body")}>
@@ -151,11 +159,16 @@ function QualifyingTable({ result }: { result: QualifyingResult }) {
                 </span>
               </td>
               <td className={TD}>
-                <span className="text-body-md text-ink">
-                  {row.driver.fullName}
-                </span>
-                <span className="block text-caption text-muted">
-                  {row.constructor.name}
+                <span className="flex items-stretch gap-xs">
+                  <TeamStripe constructorId={row.constructor.id} />
+                  <span className="block">
+                    <span className="text-body-md text-ink">
+                      {row.driver.fullName}
+                    </span>
+                    <span className="block text-caption text-muted">
+                      {row.constructor.name}
+                    </span>
+                  </span>
                 </span>
               </td>
               <td className={cn(TD, "text-right tnum text-body-md text-body")}>
