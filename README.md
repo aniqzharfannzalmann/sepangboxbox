@@ -106,20 +106,32 @@ windowed to roughly the last twenty races rather than a circuit's whole history.
 ### Track outlines
 
 ```bash
-npm run maps:circuits           # all circuits
-npm run maps:circuits sepang    # one
+npm run maps:circuits
 ```
 
-Traced from OpenStreetMap into
-[`src/lib/f1/circuit-maps.json`](src/lib/f1/circuit-maps.json) and committed.
-Nothing queries Overpass at request time — outlines never change and Overpass is
-far too slow for it.
+Imported from [F1DB](https://github.com/f1db/f1db) (CC BY 4.0) into
+[`src/lib/f1/circuit-maps.json`](src/lib/f1/circuit-maps.json) and committed —
+all 23 circuits, with authoritative length, turn count, direction and type.
+Nothing fetches F1DB at request time; an outline does not change between
+releases.
 
-**A circuit only gets a map if the traced geometry matches its published length
-to within 4%.** Fifteen of twenty-three pass, all within 0.5%. The rest — mostly
-street circuits, where OSM tags the roads as ordinary streets rather than
-`highway=raceway` — show no map at all, which is deliberate: fans know these
-tracks by shape, and a wrong outline would undermine everything else on the page.
+An earlier version traced outlines from OpenStreetMap and reached only 15 of
+23: street circuits are tagged there as ordinary roads, and Silverstone and
+COTA are split into eighty-odd ways named per corner that would not reassemble.
+F1DB also replaced a table of circuit lengths that had been typed from memory.
+
+**The mapping is the dangerous part.** F1DB circuit ids are not Ergast ids
+(`albert_park` → `melbourne`, `americas` → `austin`, `vegas` → `las-vegas`), and
+matching them automatically on coordinates pairs Las Vegas with `caesars-palace`
+— the 1981 car park circuit, 3.65 km — because both sit in the same city and the
+wrong one is nearer the published coordinate. The mapping is therefore written
+out explicitly and every entry is checked two ways: coordinates must agree on
+the city, and F1DB's `totalRacesHeld` must agree with Jolpica's race count to
+within one. A correct pairing differs by 0 or 1; Caesars Palace differs by 2 and
+is rejected. `npm run verify:apis` asserts the result.
+
+Attribution is required by CC BY 4.0 and appears on the map caption and in the
+footer.
 
 ## Previewing the timing view
 

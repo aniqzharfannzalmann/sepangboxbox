@@ -234,6 +234,64 @@ try {
 
 /* ---------------------------------------------------------------- */
 
+console.log("\nCircuit maps (committed from F1DB)");
+try {
+  const { readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const maps = JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL("../src/lib/f1/circuit-maps.json", import.meta.url)),
+      "utf8",
+    ),
+  );
+
+  const calendar = await json(`${JOLPICA}/2026.json?limit=100`);
+  const circuitIds = (calendar.MRData?.RaceTable?.Races ?? []).map(
+    (r) => r.Circuit.circuitId,
+  );
+  const missing = circuitIds.filter((id) => !maps[id]);
+  check(
+    "every 2026 circuit has an outline",
+    circuitIds.length === 23 && missing.length === 0,
+    missing.length ? `missing ${missing.join(", ")}` : `${circuitIds.length} rounds`,
+  );
+
+  // The trap this guards: Caesars Palace and the Strip circuit are both in Las
+  // Vegas, and matching on coordinates picks the 1981 car park layout. Getting
+  // this wrong puts a 3.65 km circuit on the 2026 Las Vegas page.
+  check(
+    "Las Vegas maps to the Strip circuit, not Caesars Palace",
+    maps.vegas?.f1dbCircuitId === "las-vegas",
+    `got ${maps.vegas?.f1dbCircuitId}`,
+  );
+  check(
+    "Las Vegas reads 6.201 km, not 3.65",
+    maps.vegas?.lengthKm === 6.201,
+    `got ${maps.vegas?.lengthKm}`,
+  );
+
+  // Silverstone has eight layouts on record; only the current one is right.
+  check(
+    "Silverstone uses the current layout",
+    maps.silverstone?.layoutId === "silverstone-8" &&
+      maps.silverstone?.lengthKm === 5.891,
+    `got ${maps.silverstone?.layoutId} at ${maps.silverstone?.lengthKm} km`,
+  );
+
+  check(
+    "Sepang reads 5.543 km and 15 turns",
+    maps.sepang?.lengthKm === 5.543 && maps.sepang?.turns === 15,
+    `got ${maps.sepang?.lengthKm} km, ${maps.sepang?.turns} turns`,
+  );
+
+  check(
+    "every outline carries path data and a viewBox",
+    Object.values(maps).every((m) => m.d?.length > 50 && m.viewBox),
+  );
+} catch (error) {
+  check("circuit map data", false, error.message);
+}
+
 console.log(
   `\n${checks - failures}/${checks} checks passed${failures ? ` — ${failures} FAILED` : ""}\n`,
 );

@@ -1,6 +1,11 @@
 import { notFound } from "next/navigation";
 import { StatusNotice } from "@/components/StatusNotice";
-import { CircuitMap } from "@/components/circuit/CircuitMap";
+import {
+  CircuitMap,
+  getCircuitMap,
+  humanDirection,
+  humanType,
+} from "@/components/circuit/CircuitMap";
 import { RatingBar } from "@/components/circuit/RatingBar";
 import { Button } from "@/components/ui/Button";
 import {
@@ -106,6 +111,7 @@ export default async function CircuitPage({
 
   const p = profile.data;
   const isSepang = id === "sepang";
+  const map = getCircuitMap(id);
 
   const recent = [...p.winners].reverse().slice(0, 10);
   // A circuit can hold two Grands Prix in one season, so the year is neither a
@@ -125,6 +131,7 @@ export default async function CircuitPage({
           <div className="flex flex-wrap items-center gap-xxs">
             <BadgePill tone="primary">Round {race.round}</BadgePill>
             {isSepang && <BadgePill>This year&rsquo;s race</BadgePill>}
+            {map && <BadgePill>{humanType(map.type)}</BadgePill>}
           </div>
 
           <h1 className="text-display-xl text-ink mt-sm max-w-[18ch] text-balance">
@@ -135,20 +142,23 @@ export default async function CircuitPage({
           </p>
 
           <div className="flex flex-wrap gap-xl mt-xl">
-            <SpecCell value={p.racesHeld} label="Races held" accent />
-            {p.firstSeason && (
-              <SpecCell value={p.firstSeason} label="First held" />
-            )}
+            {/* Length and turns are authoritative from F1DB rather than
+                derived, so they lead. */}
+            {map && <SpecCell value={`${map.lengthKm}`} label="Kilometres" accent />}
+            {map && <SpecCell value={map.turns} label="Turns" />}
+            <SpecCell value={p.racesHeld} label="Races held" />
             {p.lapRecord && (
               <SpecCell value={p.lapRecord.time} label="Lap record" />
             )}
           </div>
 
-          {p.lapRecord && (
-            <p className="text-body-sm text-muted mt-md">
-              Fastest race lap by {p.lapRecord.driverName}, {p.lapRecord.season}.
-            </p>
-          )}
+          <p className="text-body-sm text-muted mt-md">
+            {map ? `${humanDirection(map.direction)}.` : ""}
+            {p.firstSeason ? ` First held ${p.firstSeason}.` : ""}
+            {p.lapRecord
+              ? ` Fastest race lap by ${p.lapRecord.driverName}, ${p.lapRecord.season}.`
+              : ""}
+          </p>
 
           {/* Renders nothing when the circuit has no verified outline. */}
           <CircuitMap circuitId={id} name={race.circuitName} />

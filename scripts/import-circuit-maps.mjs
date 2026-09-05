@@ -1,0 +1,237 @@
+#!/usr/bin/env node
+/**
+ * Import circuit outlines and metadata from F1DB.
+ *
+ *   npm run maps:circuits
+ *
+ * F1DB (https://github.com/f1db/f1db, CC-BY-4.0) publishes a curated outline
+ * for every circuit plus authoritative length, turn count, direction and type.
+ * It replaced an earlier pipeline that traced outlines from OpenStreetMap,
+ * which reached only fifteen of the twenty-three circuits — street circuits are
+ * tagged as ordinary roads there, and Silverstone and COTA are split into
+ * eighty-odd ways named per corner that would not reassemble.
+ *
+ * Run by hand, output committed. Nothing fetches F1DB at request time: an
+ * outline does not change between releases.
+ *
+ * The mapping is the dangerous part — see ERGAST_TO_F1DB below.
+ */
+
+import { writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { inflateRawSync } from "node:zlib";
+
+const OUT = fileURLToPath(new URL("../src/lib/f1/circuit-maps.json", import.meta.url));
+const UA = "sepang-box-box/1.0 (circuit map importer)";
+
+/**
+ * Ergast/Jolpica circuit id to F1DB circuit id.
+ *
+ * Written out rather than matched automatically, because automatic matching
+ * fails silently and badly here. Matching on coordinates pairs `vegas` with
+ * `caesars-palace` — the 1981-82 car park circuit, 3.65 km — instead of
+ * `las-vegas`, the 6.201 km Strip circuit, because both sit in Las Vegas and
+ * the wrong one happens to be nearer to the published coordinate. That would
+ * have put a 1981 layout on the 2026 Las Vegas page with nothing to flag it.
+ *
+ * Every entry is checked below against coordinates and race count anyway.
+ */
+const ERGAST_TO_F1DB = {
+  albert_park: "melbourne",
+  americas: "austin",
+  baku: "baku",
+  catalunya: "catalunya",
+  hungaroring: "hungaroring",
+  interlagos: "interlagos",
+  losail: "lusail",
+  madring: "madring",
+  marina_bay: "marina-bay",
+  miami: "miami",
+  monaco: "monaco",
+  monza: "monza",
+  red_bull_ring: "spielberg",
+  rodriguez: "mexico-city",
+  sepang: "sepang",
+  shanghai: "shanghai",
+  silverstone: "silverstone",
+  spa: "spa-francorchamps",
+  suzuka: "suzuka",
+  vegas: "las-vegas",
+  villeneuve: "montreal",
+  yas_marina: "yas-marina",
+  zandvoort: "zandvoort",
+};
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function getJson(url) {
+  const res = await fetch(url, { headers: { "User-Agent": UA } });
+  if (!res.ok) throw new Error(`${res.status} for ${url}`);
+  return res.json();
+}
+
+async function getText(url) {
+  const res = await fetch(url, { headers: { "User-Agent": UA } });
+  if (!res.ok) throw new Error(`${res.status} for ${url}`);
+  return res.text();
+}
+
+/** Minimal reader for the stored (uncompressed) and deflated entries we need. */
+function readZipEntries(buffer, wanted) {
+  const out = {};
+  const view = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+
+  // Walk local file headers; the archive is small and flat.
+  for (let i = 0; i < buffer.length - 4; i += 1) {
+    if (view.getUint32(i, true) !== 0x04034b50) continue;
+    const method = view.getUint16(i + 8, true);
+    const compressedSize = view.getUint32(i + 18, true);
+    const nameLength = view.getUint16(i + 26, true);
+    const extraLength = view.getUint16(i + 28, true);
+    const nameStart = i + 30;
+    const name = buffer.toString("utf8", nameStart, nameStart + nameLength);
+    if (!wanted.includes(name)) continue;
+
+    const dataStart = nameStart + nameLength + extraLength;
+    const raw = buffer.subarray(dataStart, dataStart + compressedSize);
+    // Method 0 is stored, 8 is raw deflate — zip entries carry no zlib header.
+    out[name] = method === 0 ? raw : inflateRawSync(raw);
+  }
+  return out;
+}
+
+function kmApart(a, b) {
+  const k = Math.cos((a.lat * Math.PI) / 180);
+  return Math.hypot((a.lon - b.lon) * k * 111.32, (a.lat - b.lat) * 111.32);
+}
+
+/** Pull the single path and its stroke width out of an F1DB circuit asset. */
+function extractPath(svg) {
+  const d = /\sd="([^"]+)"/.exec(svg)?.[1];
+  if (!d) throw new Error("no path data");
+  const width = /stroke-width:\s*([\d.]+)/.exec(svg)?.[1];
+  const boxW = /width="(\d+)"/.exec(svg)?.[1] ?? "500";
+  const boxH = /height="(\d+)"/.exec(svg)?.[1] ?? boxW;
+  return {
+    d,
+    // The assets carry no viewBox, only width/height on a square canvas.
+    viewBox: /viewBox="([^"]+)"/.exec(svg)?.[1] ?? `0 0 ${boxW} ${boxH}`,
+    strokeWidth: width ? Number(width) : 20,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+
+console.log("Resolving latest F1DB release...");
+const release = await getJson("https://api.github.com/repos/f1db/f1db/releases/latest");
+const tag = release.tag_name;
+const asset = release.assets.find((a) => a.name === "f1db-json-splitted.zip");
+if (!asset) throw new Error("f1db-json-splitted.zip not in release");
+console.log(`  ${tag}, published ${release.published_at.slice(0, 10)}`);
+
+const zipRes = await fetch(asset.browser_download_url, { headers: { "User-Agent": UA } });
+const zip = Buffer.from(await zipRes.arrayBuffer());
+const entries = readZipEntries(zip, ["f1db-circuits.json", "f1db-circuits-layouts.json"]);
+
+const circuits = new Map(
+  JSON.parse(entries["f1db-circuits.json"].toString("utf8")).map((c) => [c.id, c]),
+);
+const effective = new Map();
+for (const layout of JSON.parse(entries["f1db-circuits-layouts.json"].toString("utf8"))) {
+  if (layout.effective) effective.set(layout.circuitId, layout);
+}
+console.log(`  ${circuits.size} circuits, ${effective.size} effective layouts\n`);
+
+const calendar = await getJson("https://api.jolpi.ca/ergast/f1/2026.json?limit=100");
+const races = calendar.MRData.RaceTable.Races;
+
+const maps = {};
+const failures = [];
+
+for (const race of races) {
+  const ergastId = race.Circuit.circuitId;
+  const f1dbId = ERGAST_TO_F1DB[ergastId];
+  process.stdout.write(`${ergastId.padEnd(15)}`);
+
+  const fail = (why) => {
+    console.log(`REJECTED - ${why}`);
+    failures.push({ ergastId, why });
+  };
+
+  if (!f1dbId) {
+    fail("no mapping entry");
+    continue;
+  }
+  const circuit = circuits.get(f1dbId);
+  const layout = effective.get(f1dbId);
+  if (!circuit || !layout) {
+    fail(`F1DB has no ${!circuit ? "circuit" : "effective layout"} for ${f1dbId}`);
+    continue;
+  }
+
+  // Gate 1: the two sources must at least agree on the city.
+  //
+  // Deliberately loose. Sources pick different reference points on the same
+  // circuit — Jolpica puts Las Vegas at the south end of the Strip and F1DB
+  // 7.5 km north — so a tight radius rejects correct pairings. This only
+  // catches a mapping that landed in the wrong place entirely; telling two
+  // circuits in the same city apart is gate 2's job.
+  const apart = kmApart(
+    { lat: Number(race.Circuit.Location.lat), lon: Number(race.Circuit.Location.long) },
+    { lat: circuit.latitude, lon: circuit.longitude },
+  );
+  if (apart > 25) {
+    fail(`${apart.toFixed(1)} km from the Jolpica coordinate`);
+    continue;
+  }
+
+  // Gate 2: and on how many races have been held there. This is what catches
+  // a plausible-but-wrong pairing: Caesars Palace held 2, the Strip circuit 3,
+  // and Jolpica counts 4 including the scheduled 2026 round. A correct match
+  // differs by 0 or 1; the wrong one differs by 2.
+  await sleep(400);
+  const held = await getJson(
+    `https://api.jolpi.ca/ergast/f1/circuits/${ergastId}/races.json?limit=1`,
+  );
+  const jolpicaRaces = Number(held.MRData.total ?? 0);
+  const diff = jolpicaRaces - circuit.totalRacesHeld;
+  if (diff < 0 || diff > 1) {
+    fail(
+      `race counts disagree - F1DB ${circuit.totalRacesHeld}, Jolpica ${jolpicaRaces}`,
+    );
+    continue;
+  }
+
+  const svg = await getText(
+    `https://raw.githubusercontent.com/f1db/f1db/${tag}/src/assets/circuits/white/${layout.id}.svg`,
+  );
+  const path = extractPath(svg);
+
+  maps[ergastId] = {
+    f1dbCircuitId: f1dbId,
+    layoutId: layout.id,
+    // Colour is deliberately not carried over: it comes from the design
+    // tokens so the outline follows the palette like everything else.
+    d: path.d,
+    viewBox: path.viewBox,
+    strokeWidth: path.strokeWidth,
+    lengthKm: layout.length,
+    turns: layout.turns,
+    type: circuit.type,
+    direction: circuit.direction,
+    racesHeld: circuit.totalRacesHeld,
+  };
+
+  console.log(
+    `ok - ${layout.id.padEnd(20)} ${String(layout.length).padStart(5)} km  ` +
+      `${String(layout.turns).padStart(2)} turns  ${circuit.type}`,
+  );
+  await sleep(200);
+}
+
+const ordered = Object.fromEntries(Object.entries(maps).sort(([a], [b]) => a.localeCompare(b)));
+writeFileSync(OUT, `${JSON.stringify(ordered, null, 2)}\n`, "utf8");
+
+console.log(`\n${Object.keys(maps).length}/${races.length} circuits imported from F1DB ${tag}`);
+for (const f of failures) console.log(`  no map: ${f.ergastId} (${f.why})`);
+if (failures.length) process.exitCode = 1;
