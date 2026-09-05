@@ -286,7 +286,20 @@ try {
 
   check(
     "every outline carries path data and a viewBox",
-    Object.values(maps).every((m) => m.d?.length > 50 && m.viewBox),
+    Object.values(maps).every(
+      (m) => m.viewBox && m.paths?.length > 0 && m.paths[0].d?.length > 50,
+    ),
+  );
+
+  // The detailed artwork draws the track plus a start line and marker. If a
+  // circuit drops to one path it has quietly fallen back to a bare outline.
+  const bare = Object.entries(maps)
+    .filter(([, m]) => (m.paths?.length ?? 0) < 3)
+    .map(([id]) => id);
+  check(
+    "every circuit has the detailed artwork, not just an outline",
+    bare.length === 0,
+    bare.length ? `only an outline for ${bare.join(", ")}` : "3 paths each",
   );
 } catch (error) {
   check("circuit map data", false, error.message);

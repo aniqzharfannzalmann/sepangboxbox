@@ -4,12 +4,16 @@
  *
  *   npm run maps:circuits
  *
- * F1DB (https://github.com/f1db/f1db, CC-BY-4.0) publishes a curated outline
- * for every circuit plus authoritative length, turn count, direction and type.
- * It replaced an earlier pipeline that traced outlines from OpenStreetMap,
- * which reached only fifteen of the twenty-three circuits — street circuits are
- * tagged as ordinary roads there, and Silverstone and COTA are split into
- * eighty-odd ways named per corner that would not reassemble.
+ * Two sources, each for what it is best at:
+ *   - F1DB (https://github.com/f1db/f1db, CC-BY-4.0) for metadata — length,
+ *     turns, direction, type, and which layout is currently in use.
+ *   - julesr0y/f1-circuits-svg (CC-BY-4.0) for the artwork, whose `detailed`
+ *     set draws the start line and marker as well as the outline.
+ *
+ * Together they replaced an earlier pipeline that traced outlines from
+ * OpenStreetMap, which reached only fifteen of the twenty-three circuits —
+ * street circuits are tagged as ordinary roads there, and Silverstone and COTA
+ * are split into eighty-odd ways named per corner that would not reassemble.
  *
  * Run by hand, output committed. Nothing fetches F1DB at request time: an
  * outline does not change between releases.
@@ -23,6 +27,21 @@ import { inflateRawSync } from "node:zlib";
 
 const OUT = fileURLToPath(new URL("../src/lib/f1/circuit-maps.json", import.meta.url));
 const UA = "sepang-box-box/1.0 (circuit map importer)";
+
+/**
+ * Outline artwork comes from julesr0y/f1-circuits-svg (CC BY 4.0), not from
+ * F1DB's own assets.
+ *
+ * Both are the same lineage — the track path is byte-for-byte the same shape —
+ * but this repository also publishes a `detailed` set that adds the start line
+ * and start marker on top of the outline. It covers 25 layouts, which happens
+ * to include all 23 on the 2026 calendar.
+ *
+ * Metadata (length, turns, direction, type, layout selection) still comes from
+ * F1DB below; this is artwork only.
+ */
+const SVG_BASE =
+  "https://raw.githubusercontent.com/julesr0y/f1-circuits-svg/main/circuits/detailed/white";
 
 /**
  * Ergast/Jolpica circuit id to F1DB circuit id.
@@ -105,18 +124,46 @@ function kmApart(a, b) {
   return Math.hypot((a.lon - b.lon) * k * 111.32, (a.lat - b.lat) * 111.32);
 }
 
-/** Pull the single path and its stroke width out of an F1DB circuit asset. */
-function extractPath(svg) {
-  const d = /\sd="([^"]+)"/.exec(svg)?.[1];
-  if (!d) throw new Error("no path data");
-  const width = /stroke-width:\s*([\d.]+)/.exec(svg)?.[1];
+/**
+ * Pull every path out of a circuit asset, keeping enough of each one's style
+ * to redraw it.
+ *
+ * The detailed assets carry three: the track outline as a thick stroke, the
+ * start line as a thin one, and a small filled start marker. Colours are
+ * deliberately dropped — those come from the design tokens — but fill-versus-
+ * stroke and the relative widths have to survive, or the marker renders as an
+ * outline and the track as a blob.
+ */
+function extractPaths(svg) {
+  const paths = [];
+
+  for (const match of svg.matchAll(/<path\b[^>]*>/g)) {
+    const tag = match[0];
+    const d = /\sd="([^"]+)"/.exec(tag)?.[1];
+    if (!d) continue;
+
+    const style = /style="([^"]*)"/.exec(tag)?.[1] ?? "";
+    const prop = (name) =>
+      new RegExp(`(?:^|;)\\s*${name}\\s*:\\s*([^;]+)`).exec(style)?.[1]?.trim();
+
+    const fill = prop("fill");
+    paths.push({
+      d,
+      filled: Boolean(fill && fill !== "none"),
+      strokeWidth: Number(prop("stroke-width") ?? 0),
+      linecap: prop("stroke-linecap") ?? "round",
+      linejoin: prop("stroke-linejoin") ?? "round",
+    });
+  }
+
+  if (paths.length === 0) throw new Error("no path data");
+
   const boxW = /width="(\d+)"/.exec(svg)?.[1] ?? "500";
   const boxH = /height="(\d+)"/.exec(svg)?.[1] ?? boxW;
   return {
-    d,
+    paths,
     // The assets carry no viewBox, only width/height on a square canvas.
     viewBox: /viewBox="([^"]+)"/.exec(svg)?.[1] ?? `0 0 ${boxW} ${boxH}`,
-    strokeWidth: width ? Number(width) : 20,
   };
 }
 
@@ -202,19 +249,16 @@ for (const race of races) {
     continue;
   }
 
-  const svg = await getText(
-    `https://raw.githubusercontent.com/f1db/f1db/${tag}/src/assets/circuits/white/${layout.id}.svg`,
-  );
-  const path = extractPath(svg);
+  const svg = await getText(`${SVG_BASE}/${layout.id}.svg`);
+  const art = extractPaths(svg);
 
   maps[ergastId] = {
     f1dbCircuitId: f1dbId,
     layoutId: layout.id,
     // Colour is deliberately not carried over: it comes from the design
     // tokens so the outline follows the palette like everything else.
-    d: path.d,
-    viewBox: path.viewBox,
-    strokeWidth: path.strokeWidth,
+    paths: art.paths,
+    viewBox: art.viewBox,
     lengthKm: layout.length,
     turns: layout.turns,
     type: circuit.type,
@@ -224,7 +268,7 @@ for (const race of races) {
 
   console.log(
     `ok - ${layout.id.padEnd(20)} ${String(layout.length).padStart(5)} km  ` +
-      `${String(layout.turns).padStart(2)} turns  ${circuit.type}`,
+      `${String(layout.turns).padStart(2)} turns  ${String(art.paths.length)} paths  ${circuit.type}`,
   );
   await sleep(200);
 }

@@ -109,11 +109,19 @@ windowed to roughly the last twenty races rather than a circuit's whole history.
 npm run maps:circuits
 ```
 
-Imported from [F1DB](https://github.com/f1db/f1db) (CC BY 4.0) into
+Two sources, each for what it is best at, both CC BY 4.0, both imported into
 [`src/lib/f1/circuit-maps.json`](src/lib/f1/circuit-maps.json) and committed —
-all 23 circuits, with authoritative length, turn count, direction and type.
-Nothing fetches F1DB at request time; an outline does not change between
-releases.
+nothing is fetched at request time.
+
+- **[F1DB](https://github.com/f1db/f1db)** for metadata: length, turns,
+  direction, type, and which layout is currently in use (`effective: true`).
+- **[julesr0y/f1-circuits-svg](https://github.com/julesr0y/f1-circuits-svg)**
+  for the artwork. Its `detailed` set draws the start line and start marker as
+  well as the outline; the outline itself is the same lineage as F1DB's. It
+  covers 25 layouts, which includes all 23 on the 2026 calendar.
+
+The assets' own colours are dropped on import. The track takes Rosso Corsa and
+the start markings take ink, so they read against it rather than into it.
 
 An earlier version traced outlines from OpenStreetMap and reached only 15 of
 23: street circuits are tagged there as ordinary roads, and Silverstone and

@@ -1,11 +1,19 @@
 import maps from "@/lib/f1/circuit-maps.json";
 
+export interface CircuitPath {
+  d: string;
+  /** Filled shape rather than a stroked line — the start marker. */
+  filled: boolean;
+  strokeWidth: number;
+  linecap: string;
+  linejoin: string;
+}
+
 export interface CircuitMapData {
   f1dbCircuitId: string;
   layoutId: string;
-  d: string;
+  paths: CircuitPath[];
   viewBox: string;
-  strokeWidth: number;
   lengthKm: number;
   turns: number;
   /** "RACE", "STREET" or "ROAD". */
@@ -33,13 +41,14 @@ export function humanType(type: string): string {
 }
 
 /**
- * The circuit outline.
+ * The circuit outline, with its start line and marker.
  *
- * Imported from F1DB by `npm run maps:circuits` and committed — an outline does
- * not change between releases, so nothing is fetched at request time.
+ * Imported by `npm run maps:circuits` and committed — artwork does not change
+ * between releases, so nothing is fetched at request time.
  *
- * The asset's own stroke colour is dropped during import and set here from the
- * design tokens, so the outline follows the palette like everything else.
+ * The assets' own colours are dropped on import and set here from the design
+ * tokens. The track takes Rosso Corsa; the start line and marker take ink, so
+ * they read against it rather than disappearing into it.
  */
 export function CircuitMap({
   circuitId,
@@ -51,6 +60,10 @@ export function CircuitMap({
   const map = getCircuitMap(circuitId);
   if (!map) return null;
 
+  // The track is the heaviest stroke in the drawing; everything else is a
+  // marking laid on top of it.
+  const trackWidth = Math.max(...map.paths.map((p) => p.strokeWidth));
+
   return (
     <figure className="mt-lg">
       <svg
@@ -59,17 +72,35 @@ export function CircuitMap({
         aria-label={`Outline of ${name}: ${map.turns} turns, ${map.lengthKm} km, ${humanDirection(map.direction).toLowerCase()}`}
         className="w-full h-auto max-h-[400px]"
       >
-        <path
-          d={map.d}
-          fill="none"
-          stroke="var(--color-primary)"
-          strokeWidth={map.strokeWidth}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
+        {map.paths.map((path, i) => {
+          const isTrack = !path.filled && path.strokeWidth === trackWidth;
+          const colour = isTrack
+            ? "var(--color-primary)"
+            : "var(--color-ink)";
+          return (
+            <path
+              key={i}
+              d={path.d}
+              fill={path.filled ? colour : "none"}
+              stroke={path.filled ? "none" : colour}
+              strokeWidth={path.strokeWidth}
+              strokeLinecap={path.linecap as "round" | "square" | "butt"}
+              strokeLinejoin={path.linejoin as "round" | "bevel" | "miter"}
+            />
+          );
+        })}
       </svg>
       <figcaption className="text-caption text-muted mt-xs">
-        Circuit outline from{" "}
+        Circuit artwork from{" "}
+        <a
+          href="https://github.com/julesr0y/f1-circuits-svg"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-2 hover:text-ink"
+        >
+          f1-circuits-svg
+        </a>
+        , measurements from{" "}
         <a
           href="https://github.com/f1db/f1db"
           target="_blank"
@@ -78,7 +109,7 @@ export function CircuitMap({
         >
           F1DB
         </a>
-        , CC BY 4.0.
+        . Both CC BY 4.0.
       </figcaption>
     </figure>
   );
