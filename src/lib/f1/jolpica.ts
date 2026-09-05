@@ -56,7 +56,11 @@ const LIVE_REVALIDATE_SECONDS = 60;
 export const HISTORY_REVALIDATE_SECONDS = 86_400;
 
 /** The race this app is built around. */
-export const SEPANG = { season: "2026", round: "16" } as const;
+export const SEPANG = {
+  season: "2026",
+  round: "16",
+  circuitId: "sepang",
+} as const;
 
 /*
  * Nominal session lengths. Ergast/Jolpica publishes a start time but no

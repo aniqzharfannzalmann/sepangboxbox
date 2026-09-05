@@ -1,31 +1,38 @@
 import "server-only";
 
-import { SEPANG, getRaceWeekend, getSeasonSchedule } from "./jolpica";
-import sepangSnapshot from "./sepang.static.json";
+import { SEPANG, getSeasonSchedule } from "./jolpica";
+import seasonSnapshot from "./season.static.json";
 import type { RaceWeekend, WithOrigin } from "./types";
 
 /**
- * The Sepang weekend, guaranteed.
+ * The season calendar, guaranteed.
  *
- * The schedule is the single most important thing this app shows during race
- * week, and it is also completely fixed — so a snapshot of it is committed to
+ * The schedule is the most important thing this app shows during a race week,
+ * and the published times barely move — so the whole calendar is committed to
  * the repository. If Jolpica is unreachable, rate-limited, or slow at exactly
- * the wrong moment, the page still renders the right times; it just says so.
+ * the wrong moment, every page still renders the right times; it just says so.
  *
- * Regenerate the snapshot with `npm run snapshot:sepang`.
+ * This used to cover the Sepang weekend alone. Now that the app follows
+ * whichever race is next, any round can be the one a reader needs, so all of
+ * them are snapshotted.
+ *
+ * Regenerate with `npm run snapshot:season`.
  */
-const SNAPSHOT = sepangSnapshot as RaceWeekend;
+const SNAPSHOT = seasonSnapshot as RaceWeekend[];
 
-export async function getSepangWeekend(): Promise<WithOrigin<RaceWeekend>> {
+export async function getSeasonScheduleSafe(): Promise<
+  WithOrigin<RaceWeekend[]>
+> {
   const fetchedAtMs = Date.now();
+
   try {
-    const data = await getRaceWeekend(SEPANG.season, SEPANG.round);
-    // Guard against a well-formed response for the wrong race.
-    if (data.circuitId !== SNAPSHOT.circuitId) {
+    const data = await getSeasonSchedule();
+    // A well-formed response for the wrong season is still the wrong data.
+    if (data.length === 0 || data[0]?.season !== SNAPSHOT[0]?.season) {
       return {
         data: SNAPSHOT,
         origin: "fallback",
-        reason: "Schedule feed returned an unexpected circuit",
+        reason: "Schedule feed returned an unexpected season.",
         fetchedAtMs,
       };
     }
@@ -44,23 +51,54 @@ export async function getSepangWeekend(): Promise<WithOrigin<RaceWeekend>> {
   }
 }
 
+/** The last thing that happens at a weekend — usually the race. */
+function endOfWeekend(weekend: RaceWeekend): number {
+  const ends = weekend.sessions.map((s) => new Date(s.endsAtIso).getTime());
+  return ends.length ? Math.max(...ends) : 0;
+}
+
+export interface ActiveWeekend {
+  /** The weekend in progress, or the next one still to come. */
+  weekend: RaceWeekend;
+  /** Rounds that have not finished, in order, including `weekend`. */
+  upcoming: RaceWeekend[];
+  /** The Sepang round, whenever it falls — this app is named for it. */
+  sepang: RaceWeekend | null;
+  /** True once every round has been run. */
+  seasonOver: boolean;
+}
+
 /**
- * Full season calendar. There is no snapshot for this one: it is supporting
- * context rather than race-critical, so an empty list and an honest message
- * beats shipping a stale copy of 23 rounds.
+ * Which weekend the app should be pointed at.
+ *
+ * The app follows whatever race is next rather than a fixed round: Sepang is
+ * round 16 and would leave every page stale for the eleven rounds around it,
+ * and dead once it has been run. Sepang keeps a highlight of its own instead.
+ *
+ * Falls back to the final round when the season is over, so the pages have
+ * something coherent to render rather than nothing.
  */
-export async function getSeasonScheduleSafe(): Promise<
-  WithOrigin<RaceWeekend[]>
-> {
-  const fetchedAtMs = Date.now();
-  try {
-    return { data: await getSeasonSchedule(), origin: "live", fetchedAtMs };
-  } catch {
-    return {
-      data: [],
-      origin: "fallback",
-      reason: "Season calendar is temporarily unavailable.",
-      fetchedAtMs,
-    };
-  }
+export function pickActiveWeekend(
+  races: RaceWeekend[],
+  nowMs: number,
+): ActiveWeekend {
+  const upcoming = races.filter((r) => endOfWeekend(r) > nowMs);
+  const sepang = races.find((r) => r.circuitId === SEPANG.circuitId) ?? null;
+
+  return {
+    weekend: upcoming[0] ?? races[races.length - 1],
+    upcoming,
+    sepang,
+    seasonOver: upcoming.length === 0,
+  };
+}
+
+export async function getActiveWeekend(): Promise<WithOrigin<ActiveWeekend>> {
+  const season = await getSeasonScheduleSafe();
+  return {
+    data: pickActiveWeekend(season.data, season.fetchedAtMs),
+    origin: season.origin,
+    reason: season.reason,
+    fetchedAtMs: season.fetchedAtMs,
+  };
 }

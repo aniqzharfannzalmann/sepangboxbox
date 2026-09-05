@@ -1,17 +1,15 @@
 import Link from "next/link";
 import { Countdown } from "@/components/Countdown";
 import { StatusNotice } from "@/components/StatusNotice";
+import { Button } from "@/components/ui/Button";
 import {
   BadgePill,
   Container,
   Hairline,
   SectionLabel,
 } from "@/components/ui/primitives";
-import {
-  getWeekendState,
-  groupSessionsByDay,
-  type WeekendState,
-} from "@/lib/f1/session-windows";
+import { cn } from "@/lib/cn";
+import { getWeekendState, groupSessionsByDay } from "@/lib/f1/session-windows";
 import {
   MYT_LABEL,
   formatDayMonthMyt,
@@ -20,13 +18,24 @@ import {
   mytDayKey,
 } from "@/lib/f1/time";
 import type { F1Session, RaceWeekend } from "@/lib/f1/types";
-import { getSeasonScheduleSafe, getSepangWeekend } from "@/lib/f1/weekend";
+import { getSeasonScheduleSafe, pickActiveWeekend } from "@/lib/f1/weekend";
 
 export const metadata = {
   title: "Schedule",
   description:
-    "Every session of the 2026 Bahrain Grand Prix in Malaysia at Sepang, in Malaysia Time, with a live countdown.",
+    "Every remaining Formula 1 session of the 2026 season in Malaysia and Singapore time, with a countdown to the next one.",
 };
+
+/*
+ * The season schedule, in Malaysia time.
+ *
+ * The app used to show the Sepang weekend and a bare list of dates. It now
+ * covers every round: Sepang is one of eleven still to come, and a fan wants
+ * Monza this weekend as much as Sepang in October.
+ *
+ * The next race is expanded; the rest open on demand through <details>, which
+ * costs no JavaScript and works before hydration.
+ */
 
 function SessionRow({
   session,
@@ -38,8 +47,8 @@ function SessionRow({
   isLive: boolean;
 }) {
   return (
-    <li className="flex items-baseline gap-xs py-sm border-b border-hairline last:border-b-0">
-      <span className="text-title-sm tnum text-ink w-[5.5rem] shrink-0">
+    <li className="flex items-baseline gap-xs py-xs border-b border-hairline last:border-b-0">
+      <span className="text-title-sm tnum text-ink w-[5rem] shrink-0">
         {formatTimeMyt(session.startsAtIso)}
       </span>
       <span className="text-body-md text-ink flex-1">{session.label}</span>
@@ -49,29 +58,40 @@ function SessionRow({
   );
 }
 
-function WeekendSchedule({
+/**
+ * Sessions grouped by their Malaysian calendar day.
+ *
+ * `nextKey` identifies the one session that is genuinely next across the whole
+ * season. Deriving it per weekend instead would badge the opening practice of
+ * every future round as "Next", which is true within that weekend and wrong on
+ * a page showing eleven of them.
+ */
+function SessionDays({
   weekend,
-  state,
+  nowMs,
+  nextKey,
 }: {
   weekend: RaceWeekend;
-  state: WeekendState;
+  nowMs: number;
+  nextKey: string | null;
 }) {
+  const state = getWeekendState(weekend, nowMs);
   const days = groupSessionsByDay(weekend.sessions, mytDayKey);
 
   return (
-    <div className="mt-lg flex flex-col gap-lg">
+    <div className="flex flex-col gap-md">
       {days.map(({ day, sessions }) => (
         <section key={day}>
-          <h3 className="label-caps text-muted">
+          <h4 className="label-caps text-muted">
             {formatWeekdayMyt(sessions[0].startsAtIso)} ·{" "}
             {formatDayMonthMyt(sessions[0].startsAtIso)}
-          </h3>
-          <ul className="mt-xs">
+          </h4>
+          <ul className="mt-xxs">
             {sessions.map((s) => (
               <SessionRow
                 key={s.kind}
                 session={s}
-                isNext={state.next?.kind === s.kind}
+                isNext={`${weekend.round}-${s.kind}` === nextKey}
                 isLive={state.current?.kind === s.kind}
               />
             ))}
@@ -82,113 +102,170 @@ function WeekendSchedule({
   );
 }
 
-function SeasonCalendar({
-  races,
-  nowMs,
-}: {
-  races: RaceWeekend[];
-  nowMs: number;
-}) {
-  return (
-    <ul className="mt-md">
-      {races.map((race) => {
-        const raceSession =
-          race.sessions.find((s) => s.kind === "race") ?? race.sessions.at(-1);
-        const done = raceSession
-          ? new Date(raceSession.endsAtIso).getTime() < nowMs
-          : false;
-        const isSepang = race.circuitId === "sepang";
+function RoundHeading({ race }: { race: RaceWeekend }) {
+  const raceSession = race.sessions.find((s) => s.kind === "race");
+  const isSepang = race.circuitId === "sepang";
+  const hasSprint = race.sessions.some((s) => s.kind === "sprint");
 
-        return (
-          <li
-            key={race.round}
-            className="border-b border-hairline"
-          >
-            <Link
-              href={`/circuits/${race.circuitId}`}
-              className="flex items-baseline gap-xs py-sm hover:bg-canvas-elevated transition-colors"
-            >
-            <span className="text-caption tnum text-muted w-8 shrink-0">
-              {race.round}
-            </span>
-            <div className="flex-1 min-w-0">
-              <p
-                className={
-                  isSepang ? "text-body-md text-ink" : "text-body-md text-body"
-                }
-              >
-                {race.raceName}
-              </p>
-              <p className="text-caption text-muted truncate">
-                {race.circuitName}
-              </p>
-            </div>
-            <span className="text-caption tnum text-muted shrink-0">
-              {raceSession ? formatDayMonthMyt(raceSession.startsAtIso) : "TBC"}
-            </span>
-            {isSepang && <BadgePill tone="primary">Sepang</BadgePill>}
-            {!isSepang && done && <BadgePill>Done</BadgePill>}
-            </Link>
-          </li>
-        );
-      })}
-    </ul>
+  return (
+    <>
+      <span className="text-caption tnum text-muted w-8 shrink-0">
+        {race.round}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p
+          className={cn(
+            "text-body-md",
+            isSepang ? "text-primary" : "text-ink",
+          )}
+        >
+          {race.raceName}
+        </p>
+        <p className="text-caption text-muted truncate">
+          {race.circuitName}
+          {hasSprint ? " · Sprint weekend" : ""}
+        </p>
+      </div>
+      <span className="text-caption tnum text-muted shrink-0">
+        {raceSession ? formatDayMonthMyt(raceSession.startsAtIso) : "TBC"}
+      </span>
+    </>
   );
 }
 
 export default async function SchedulePage() {
-  const [weekend, season] = await Promise.all([
-    getSepangWeekend(),
-    getSeasonScheduleSafe(),
-  ]);
-
+  const season = await getSeasonScheduleSafe();
   // The clock reading comes from the data layer, not from here — components
   // must stay pure, and this way every row on the page agrees on "now".
-  const nowMs = weekend.fetchedAtMs;
-  const state = getWeekendState(weekend.data, nowMs);
+  const nowMs = season.fetchedAtMs;
+  const active = pickActiveWeekend(season.data, nowMs);
+
+  const next = active.weekend;
+  const later = active.upcoming.slice(1);
+  const done = season.data.filter((r) => !active.upcoming.includes(r));
+  const nextState = getWeekendState(next, nowMs);
+  // The single next session in the season, as "round-kind".
+  const nextKey = nextState.next ? `${next.round}-${nextState.next.kind}` : null;
 
   return (
     <Container className="py-xxl">
-      <SectionLabel>All times in {MYT_LABEL} · UTC+8</SectionLabel>
-      <h1 className="text-display-lg text-ink mt-xs">Race weekend</h1>
-      <p className="text-body-md text-body mt-xs">
-        {weekend.data.raceName} · {weekend.data.circuitName},{" "}
-        {weekend.data.locality}
-      </p>
+      <SectionLabel>
+        All times in {MYT_LABEL} · Malaysia and Singapore, UTC+8
+      </SectionLabel>
+      <h1 className="text-display-lg text-ink mt-xs">2026 schedule</h1>
 
-      {weekend.origin === "fallback" && (
-        <StatusNotice tone="warning" className="mt-md">
-          {weekend.reason}
-        </StatusNotice>
-      )}
-
-      {state.next && (
-        <div className="mt-lg">
-          <SectionLabel>
-            {state.status === "live" ? "Next session" : `Next · ${state.next.label}`}
-          </SectionLabel>
-          <Countdown targetIso={state.next.startsAtIso} className="mt-xs" />
-        </div>
-      )}
-
-      {state.status === "finished" && (
-        <StatusNotice className="mt-lg">
-          The Sepang weekend is complete.
-        </StatusNotice>
-      )}
-
-      <WeekendSchedule weekend={weekend.data} state={state} />
-
-      <Hairline className="my-xxl" />
-
-      <SectionLabel>2026 season</SectionLabel>
-      <h2 className="text-display-md text-ink mt-xxs">Full calendar</h2>
-      {season.origin === "fallback" ? (
+      {season.origin === "fallback" && (
         <StatusNotice tone="warning" className="mt-md">
           {season.reason}
         </StatusNotice>
+      )}
+
+      {active.seasonOver ? (
+        <StatusNotice className="mt-lg">
+          The 2026 season is complete.
+        </StatusNotice>
       ) : (
-        <SeasonCalendar races={season.data} nowMs={nowMs} />
+        <section className="mt-xl">
+          <div className="flex flex-wrap items-center gap-xxs">
+            <BadgePill tone="primary">Round {next.round}</BadgePill>
+            {next.circuitId === "sepang" && <BadgePill>Sepang</BadgePill>}
+            {nextState.status === "live" && (
+              <BadgePill tone="warning">Under way</BadgePill>
+            )}
+          </div>
+
+          <h2 className="text-display-md text-ink mt-xs">{next.raceName}</h2>
+          <p className="text-body-md text-body mt-xxs">
+            <Link
+              href={`/circuits/${next.circuitId}`}
+              className="hover:text-ink transition-colors underline underline-offset-4 decoration-1"
+            >
+              {next.circuitName}
+            </Link>
+            , {next.locality}
+          </p>
+
+          {nextState.next && (
+            <div className="mt-lg">
+              <SectionLabel>Next · {nextState.next.label}</SectionLabel>
+              <Countdown targetIso={nextState.next.startsAtIso} className="mt-xs" />
+            </div>
+          )}
+
+          <div className="mt-lg">
+            <SessionDays weekend={next} nowMs={nowMs} nextKey={nextKey} />
+          </div>
+        </section>
+      )}
+
+      {later.length > 0 && (
+        <>
+          <Hairline className="my-xxl" />
+          <SectionLabel>Still to come</SectionLabel>
+          <h2 className="text-display-md text-ink mt-xxs">
+            {later.length} more {later.length === 1 ? "round" : "rounds"}
+          </h2>
+          <ul className="mt-md">
+            {later.map((race) => (
+              <li key={race.round} className="border-b border-hairline">
+                {/*
+                  <details> rather than React state: the sessions are already
+                  on the page, so opening one needs no JavaScript and works
+                  before hydration.
+                */}
+                <details className="group">
+                  <summary className="flex items-baseline gap-xs py-sm cursor-pointer list-none hover:bg-canvas-elevated transition-colors">
+                    <RoundHeading race={race} />
+                    <span
+                      aria-hidden
+                      className="text-caption text-muted shrink-0 w-4 text-right group-open:hidden"
+                    >
+                      +
+                    </span>
+                    <span
+                      aria-hidden
+                      className="text-caption text-muted shrink-0 w-4 text-right hidden group-open:inline"
+                    >
+                      −
+                    </span>
+                  </summary>
+                  <div className="pb-md pl-8">
+                    <SessionDays weekend={race} nowMs={nowMs} nextKey={nextKey} />
+                    <Button
+                      href={`/circuits/${race.circuitId}`}
+                      variant="tertiary-text"
+                      className="mt-sm"
+                    >
+                      Circuit stats
+                    </Button>
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {done.length > 0 && (
+        <>
+          <Hairline className="my-xxl" />
+          <SectionLabel>Completed</SectionLabel>
+          <h2 className="text-display-md text-ink mt-xxs">
+            {done.length} {done.length === 1 ? "round" : "rounds"} run
+          </h2>
+          <ul className="mt-md">
+            {done.map((race) => (
+              <li key={race.round} className="border-b border-hairline">
+                <Link
+                  href={`/results/${race.round}`}
+                  className="flex items-baseline gap-xs py-sm opacity-70 hover:opacity-100 hover:bg-canvas-elevated transition-all"
+                >
+                  <RoundHeading race={race} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </Container>
   );

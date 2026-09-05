@@ -14,15 +14,15 @@ import {
 } from "@/lib/f1/standings";
 import { MYT_LABEL, formatFullMyt } from "@/lib/f1/time";
 import type { RaceWeekend } from "@/lib/f1/types";
-import { getSepangWeekend } from "@/lib/f1/weekend";
+import { getActiveWeekend } from "@/lib/f1/weekend";
 
 /*
  * Live Hub (PRD 7.1).
  *
- * During a session this becomes the live leaderboard. Until Phase 2 lands the
- * timing adapter, it leads with the countdown and a championship snapshot —
- * which is also exactly what it shows for the ~95% of the season when no car
- * is on track.
+ * Follows whichever race is next rather than a fixed round. Pinning it to
+ * Sepang left the page stale for the eleven rounds around it and would have
+ * left it dead once that weekend had run; Sepang keeps a highlight of its own
+ * further down instead.
  */
 
 function Hero({
@@ -64,8 +64,8 @@ function Hero({
 
         {state.status === "finished" && (
           <StatusNotice className="mt-xl">
-            The Sepang weekend is complete. Full classification is on the
-            results page.
+            This weekend is complete. Full classification is on the results
+            page.
           </StatusNotice>
         )}
 
@@ -154,25 +154,58 @@ function TopFive({
 }
 
 export default async function Home() {
-  const [weekend, drivers, constructors] = await Promise.all([
-    getSepangWeekend(),
+  const [active, drivers, constructors] = await Promise.all([
+    getActiveWeekend(),
     getDriverStandingsSafe(),
     getConstructorStandingsSafe(),
   ]);
 
+  const weekend = active.data.weekend;
   // The clock reading comes from the data layer, not from here — components
   // must stay pure, and this way every section agrees on "now".
-  const state = getWeekendState(weekend.data, weekend.fetchedAtMs);
+  const state = getWeekendState(weekend, active.fetchedAtMs);
+
+  // Sepang is what this app is named for, so it keeps a card of its own —
+  // unless it is already the race being counted down above.
+  const sepang = active.data.sepang;
+  const sepangIsNext = sepang?.round === weekend.round;
+  const sepangRace = sepang?.sessions.find((s) => s.kind === "race") ?? null;
+  const sepangToCome =
+    sepangRace !== null &&
+    new Date(sepangRace.endsAtIso).getTime() > active.fetchedAtMs;
 
   return (
     <>
-      <Hero weekend={weekend.data} state={state} />
+      <Hero weekend={weekend} state={state} />
 
       <Container className="py-xxl">
-        {weekend.origin === "fallback" && (
+        {active.origin === "fallback" && (
           <StatusNotice tone="warning" className="mb-lg">
-            {weekend.reason}
+            {active.reason}
           </StatusNotice>
+        )}
+
+        {/* The Sepang countdown, kept in view all season. */}
+        {sepang && sepangRace && sepangToCome && !sepangIsNext && (
+          <section className="mb-xxl border border-hairline p-md">
+            <div className="flex flex-wrap items-center gap-xxs">
+              <BadgePill tone="primary">Round {sepang.round}</BadgePill>
+              <SectionLabel>Formula 1 returns to Sepang</SectionLabel>
+            </div>
+            <p className="text-body-md text-ink mt-xs">
+              {sepang.raceName} · {formatFullMyt(sepangRace.startsAtIso)}{" "}
+              {MYT_LABEL}
+            </p>
+            <Countdown targetIso={sepangRace.startsAtIso} className="mt-md" />
+            <div className="flex flex-wrap gap-xs mt-md">
+              <Button href="/sepang" variant="outline-on-dark">
+                Sepang history
+              </Button>
+              <Button href="/circuits/sepang" variant="outline-on-dark">
+                Circuit stats
+              </Button>
+            </div>
+          </section>
         )}
 
         {state.status === "live" && (

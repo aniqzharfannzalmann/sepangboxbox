@@ -10,13 +10,14 @@ import { getWeekendState } from "../session-windows";
 import { lapTimeToSeconds } from "../time";
 import type {
   LiveSessionState,
+  RaceWeekend,
   PitStop,
   RaceControlMessage,
   Stint,
   TimingRow,
   Weather,
 } from "../types";
-import { getSepangWeekend } from "../weekend";
+import { getActiveWeekend } from "../weekend";
 import type { LiveTimingSource, SourceCapabilities } from "./types";
 
 /**
@@ -50,14 +51,13 @@ const CAPABILITIES: SourceCapabilities = {
 const PROVISIONAL_MINUTES = 60;
 
 /**
- * Points the source at a weekend other than Sepang, and/or at a pretend clock.
+ * Points the source at a specific round, and/or at a pretend clock.
  *
- * This exists so the timing table can be exercised before Sepang has run.
- * Round 16 has no results yet, so in normal operation getTimingRows() always
- * returns null and the table, the provisional badge and the retired-driver
- * styling never render at all — they would be seen working for the first time
- * on race day. Pinning the source to a completed round renders them now,
- * against real classifications.
+ * Unpinned, the source follows whichever weekend is running or next — which
+ * has no classification yet, so getTimingRows() returns null and the table,
+ * the provisional badge and the retired-driver styling never render. Without
+ * this they would be seen working for the first time on a race day. Pinning to
+ * a completed round exercises them now, against real classifications.
  */
 export interface SourcePin {
   season: string;
@@ -77,14 +77,19 @@ export class JolpicaTimingSource implements LiveTimingSource {
   constructor(private readonly pin?: SourcePin) {}
 
   async getSessionState(): Promise<LiveSessionState> {
-    // Unpinned, this is the Sepang weekend with its committed fallback.
-    // Pinned, it is whichever round the preview asked for.
-    const weekend = this.pin
-      ? {
-          data: await getRaceWeekend(this.pin.season, this.pin.round),
-          fetchedAtMs: this.pin.nowMs ?? Date.now(),
-        }
-      : await getSepangWeekend();
+    // Unpinned, this is whichever weekend is running or next, with the
+    // committed calendar behind it. Pinned, it is the round the preview asked
+    // for.
+    let weekend: { data: RaceWeekend; fetchedAtMs: number };
+    if (this.pin) {
+      weekend = {
+        data: await getRaceWeekend(this.pin.season, this.pin.round),
+        fetchedAtMs: this.pin.nowMs ?? Date.now(),
+      };
+    } else {
+      const active = await getActiveWeekend();
+      weekend = { data: active.data.weekend, fetchedAtMs: active.fetchedAtMs };
+    }
 
     const state = getWeekendState(weekend.data, weekend.fetchedAtMs);
     const session = state.current ?? state.previous;

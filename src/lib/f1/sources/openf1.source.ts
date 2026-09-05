@@ -12,7 +12,7 @@ import type {
   TyreCompound,
   Weather,
 } from "../types";
-import { getSepangWeekend } from "../weekend";
+import { getActiveWeekend } from "../weekend";
 import type { LiveTimingSource, SourceCapabilities } from "./types";
 
 /**
@@ -294,7 +294,8 @@ export class OpenF1TimingSource implements LiveTimingSource {
   async getSessionState(): Promise<LiveSessionState> {
     // The weekend structure still comes from Jolpica: it is the schedule of
     // record, it is cheap, and it works before OpenF1 has any session at all.
-    const weekend = await getSepangWeekend();
+    const active = await getActiveWeekend();
+    const weekend = { data: active.data.weekend, fetchedAtMs: active.fetchedAtMs };
     const state = getWeekendState(weekend.data, weekend.fetchedAtMs);
     const session = state.current ?? state.previous;
 

@@ -24,7 +24,7 @@ npm run dev          # http://localhost:3000
 | `npm run start` | Serve the production build |
 | `npm run lint` | ESLint |
 | `npm run verify:apis` | Contract test against the live upstream APIs |
-| `npm run snapshot:sepang` | Regenerate the committed Sepang schedule fallback |
+| `npm run snapshot:season` | Regenerate the committed season schedule fallback |
 
 ## Environment
 
@@ -164,10 +164,13 @@ session running with and without rows, provisional, and finished.
 
 ## Degrading gracefully
 
-The schedule is the most important thing this app shows during race week, and
-it is fixed, so a snapshot of it is committed at
-[`src/lib/f1/sepang.static.json`](src/lib/f1/sepang.static.json). If Jolpica is
-unreachable the times still render — the page just says where they came from.
+The schedule is the most important thing this app shows during a race week, and
+the published times barely move, so the whole calendar is committed at
+[`src/lib/f1/season.static.json`](src/lib/f1/season.static.json). If Jolpica is
+unreachable, every page still renders the right times — it just says so.
+
+This used to cover the Sepang weekend alone. The app now follows whichever race
+is next, so any round can be the one a reader needs and all 23 are snapshotted.
 
 Standings deliberately have **no** snapshot. They change through the season, so
 stale points would be worse than an honest "unavailable".
@@ -185,7 +188,12 @@ Every page must still render. None may be empty, and none may invent data.
 - **Design tokens live only in [`src/app/globals.css`](src/app/globals.css).**
   Never write a hex value in a component. The system is documented in
   [`docs/design.md`](docs/design.md).
-- **Times are always Malaysia Time.** Everything user-facing goes through
+- **The app follows the next race, not a fixed round.** `pickActiveWeekend` in
+  [`src/lib/f1/weekend.ts`](src/lib/f1/weekend.ts) chooses whichever weekend is
+  running or still to come; home, `/live` and `/schedule` all read it. Sepang
+  keeps a highlight of its own on the home page. Pinning to Sepang left every
+  page stale for the rounds around it and dead once it had run.
+- **Times are always Malaysia Time**, which is also Singapore time — both UTC+8. Everything user-facing goes through
   [`src/lib/f1/time.ts`](src/lib/f1/time.ts), which uses `Intl` with
   `Asia/Kuala_Lumpur` — never a hardcoded +8.
 - **Components must not call `Date.now()`.** React purity forbids it. The clock
