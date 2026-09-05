@@ -186,6 +186,7 @@ interface WireConstructorStanding {
 
 interface MRData {
   MRData: {
+    total?: string;
     RaceTable?: { season: string; Races: WireRace[] };
     DriverTable?: WireDriverList;
     StandingsTable?: {
@@ -637,4 +638,72 @@ export async function getPitStops(
     durationSeconds: lapTimeToSeconds(p.duration),
     atIso: null,
   }));
+}
+
+/**
+ * The most recent result rows at a circuit.
+ *
+ * Deliberately not the full history. Averaging a circuit's character over
+ * 1950-2026 measures the history of the sport rather than the track: Monaco's
+ * 44% all-time attrition shuffles finishing order so much that it came out as
+ * *easier* to overtake at than Sepang, which is plainly wrong. Restricted to
+ * roughly the last twenty races the numbers behave, and Monaco lands where it
+ * should.
+ *
+ * Ergast returns oldest first, so the recent races sit at the highest offsets
+ * and only the tail needs fetching — five requests instead of fifteen, which
+ * also keeps this inside Jolpica's rate limit.
+ */
+export async function getCircuitResults(
+  circuitId: string,
+  wantRows = 400,
+): Promise<CircuitResultRow[]> {
+  const head = await get(
+    `/circuits/${circuitId}/results.json?limit=1&offset=0`,
+    HISTORY_REVALIDATE_SECONDS,
+  );
+  const total = Number(head.MRData.total ?? 0);
+  if (total === 0) return [];
+
+  const rows: CircuitResultRow[] = [];
+  let offset = Math.max(0, total - wantRows);
+
+  // Bounded: a paging bug upstream must not become an unbounded request loop
+  // against someone else's free API.
+  for (let page = 0; page < 8 && offset < total; page += 1) {
+    const json = await get(
+      `/circuits/${circuitId}/results.json?limit=100&offset=${offset}`,
+      HISTORY_REVALIDATE_SECONDS,
+    );
+    for (const race of json.MRData.RaceTable?.Races ?? []) {
+      for (const r of race.Results ?? []) {
+        rows.push({
+          season: race.season,
+          round: race.round,
+          position: Number(r.position),
+          positionText: r.positionText,
+          gridPosition: Number(r.grid),
+          status: r.status,
+          classified: /^\d+$/.test(r.positionText),
+          driverId: r.Driver.driverId,
+          constructorId: r.Constructor.constructorId,
+        });
+      }
+    }
+    offset += 100;
+  }
+
+  return rows;
+}
+
+export interface CircuitResultRow {
+  season: string;
+  round: string;
+  position: number;
+  positionText: string;
+  gridPosition: number;
+  status: string;
+  classified: boolean;
+  driverId: string;
+  constructorId: string;
 }

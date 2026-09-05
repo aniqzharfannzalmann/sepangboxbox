@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Countdown } from "@/components/Countdown";
 import { StatusNotice } from "@/components/StatusNotice";
 import {
@@ -101,8 +102,12 @@ function SeasonCalendar({
         return (
           <li
             key={race.round}
-            className="flex items-baseline gap-xs py-sm border-b border-hairline"
+            className="border-b border-hairline"
           >
+            <Link
+              href={`/circuits/${race.circuitId}`}
+              className="flex items-baseline gap-xs py-sm hover:bg-canvas-elevated transition-colors"
+            >
             <span className="text-caption tnum text-muted w-8 shrink-0">
               {race.round}
             </span>
@@ -123,6 +128,7 @@ function SeasonCalendar({
             </span>
             {isSepang && <BadgePill tone="primary">Sepang</BadgePill>}
             {!isSepang && done && <BadgePill>Done</BadgePill>}
+            </Link>
           </li>
         );
       })}

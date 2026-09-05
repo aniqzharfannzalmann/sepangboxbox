@@ -159,8 +159,8 @@ export default async function SepangPage() {
 
           <div className="flex flex-wrap gap-xs mt-xl">
             <Button href="/schedule">2026 weekend</Button>
-            <Button href="/standings" variant="outline-on-dark">
-              Standings
+            <Button href="/circuits/sepang" variant="outline-on-dark">
+              Circuit stats
             </Button>
           </div>
         </Container>
