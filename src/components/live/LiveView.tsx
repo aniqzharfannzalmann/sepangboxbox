@@ -19,9 +19,9 @@ import { MYT_LABEL, formatDuration, formatFullMyt } from "@/lib/f1/time";
  * Live Timing (PRD 7.3).
  *
  * Every number here arrives through LiveTimingSource, so this renders
- * identically whether it is drawing post-session classifications from Jolpica
- * or second-by-second timing from OpenF1. What changes is the fidelity banner
- * and which panels render data instead of an explanation.
+ * identically whatever is behind it. Today that is post-session
+ * classifications from Jolpica; what a richer source would change is the
+ * fidelity banner and which panels render data instead of an explanation.
  *
  * The source is injected rather than resolved here so that /live/preview can
  * render this exact component against a completed round. A preview that used
@@ -70,7 +70,7 @@ export async function LiveView({
   const driverName = (id: string) => namesById.get(id) ?? id;
 
   const emptyReason = isPractice
-    ? `${sessionLabel} timing is not published by this source at any point. Live practice timing needs OpenF1 access.`
+    ? `${sessionLabel} is never classified — practice produces no official result, only live timing, which no free source publishes. The schedule and the weather are the useful things during a practice session.`
     : isLive
       ? `${sessionLabel} is running. This source only publishes a classification once the session ends.`
       : `No classification has been published for ${sessionLabel} yet.`;
@@ -189,7 +189,7 @@ export async function LiveView({
         ) : (
           <UnsupportedPanel
             title="Tyre stints"
-            reason="Compound and stint age come from OpenF1 live timing, which needs a paid API key. Not available on the current source."
+            reason="Tyre compound and stint age are only published on paid live-timing feeds. This is a free, unofficial project, so it works from the official classifications instead — which record who finished where, but not what they ran to get there."
           />
         )}
 
@@ -197,8 +197,8 @@ export async function LiveView({
           Three states, not two. The source may not support pit stops at all;
           it may support them but have none for this session type; or it may
           have them. Collapsing the middle case into "unsupported" would tell
-          a reader during qualifying that the data needs OpenF1, which is
-          false — Ergast simply records no stops outside a race.
+          a reader during qualifying that the source cannot supply pit stops,
+          which is false — Ergast simply records none outside a race.
         */}
         {!capabilities.pitLog ? (
           <UnsupportedPanel
@@ -261,7 +261,7 @@ export async function LiveView({
         ) : (
           <UnsupportedPanel
             title="Race control"
-            reason="Flags, safety cars and penalties are broadcast on the OpenF1 race control feed. Not available on the current source."
+            reason="Flags, safety cars and penalties are broadcast on live race-control feeds, which are all paid. The classification records the result they produced, not the messages themselves."
           />
         )}
       </div>

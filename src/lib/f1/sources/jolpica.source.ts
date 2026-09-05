@@ -17,6 +17,7 @@ import type {
   TimingRow,
   Weather,
 } from "../types";
+import { getSepangWeatherNow } from "../weather";
 import { getActiveWeekend } from "../weekend";
 import type { LiveTimingSource, SourceCapabilities } from "./types";
 
@@ -71,8 +72,7 @@ export class JolpicaTimingSource implements LiveTimingSource {
   readonly fidelity = "post-session" as const;
   readonly capabilities = CAPABILITIES;
   readonly description =
-    "Official classifications from Jolpica-F1, published after each session. " +
-    "Second-by-second timing needs OpenF1 live access.";
+    "Official classifications from Jolpica-F1, published after each session.";
 
   constructor(private readonly pin?: SourcePin) {}
 
@@ -235,7 +235,22 @@ export class JolpicaTimingSource implements LiveTimingSource {
     return null;
   }
 
+  /**
+   * Conditions at the circuit, from Open-Meteo rather than from Jolpica.
+   *
+   * Not timing data, and not pretending to be: this is ambient weather, which
+   * a free weather model can give and a results feed cannot. Track surface
+   * temperature stays null, because that comes from sensors in the tarmac and
+   * no forecast reports it.
+   *
+   * Sepang only. This view follows whichever race is active, and the weather
+   * module is built around one set of coordinates — so returning its numbers
+   * during a race at Monza would label Malaysian weather as Italian. Null is
+   * the honest answer everywhere else, and the panel simply does not render.
+   */
   async getWeather(): Promise<Weather | null> {
-    return null;
+    const { weekend } = await this.getSessionState();
+    if (weekend.circuitId !== "sepang") return null;
+    return getSepangWeatherNow();
   }
 }

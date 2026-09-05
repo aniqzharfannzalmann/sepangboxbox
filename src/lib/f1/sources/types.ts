@@ -12,12 +12,12 @@ import type {
  * The seam between "what the timing screen shows" and "where the numbers came
  * from".
  *
- * OpenF1's live tier is paid, and on the free tier the whole API returns 401
- * while any session is running anywhere in the world — which is exactly when
- * this app matters. So the entire Live Timing UI is built against this
- * interface instead of against a vendor. Shipping without live access costs
- * nothing but fidelity, and adding an API key later is an env change rather
- * than a rewrite.
+ * Second-by-second timing is only sold, and this project is deliberately
+ * zero-cost, so the whole Live Timing UI is built against this interface
+ * rather than against a vendor. Today there is exactly one implementation and
+ * shipping without live access costs nothing but fidelity — which the UI
+ * states plainly instead of hiding. If a free source ever appears, it arrives
+ * as a second implementation and no component changes.
  */
 
 /**
@@ -41,7 +41,7 @@ export interface SourceCapabilities {
 }
 
 export interface LiveTimingSource {
-  readonly id: "jolpica" | "openf1";
+  readonly id: "jolpica";
   readonly fidelity: Fidelity;
   readonly capabilities: SourceCapabilities;
   /** Shown to the reader, verbatim, under the timing table. */

@@ -1,29 +1,25 @@
 import "server-only";
 
 import { JolpicaTimingSource } from "./jolpica.source";
-import { OpenF1TimingSource } from "./openf1.source";
 import type { LiveTimingSource } from "./types";
 
 /**
  * Picks the timing source for this deployment.
  *
- * This one function is the whole payoff of the adapter: buying OpenF1 live
- * access is setting OPENF1_API_KEY and shipping openf1.source.ts. Nothing in
- * the UI changes, because nothing in the UI knows which source it is drawing.
+ * There is one, and by decision there will be one: second-by-second timing is
+ * only sold, and this project is a zero-cost build. The OpenF1 adapter that
+ * used to sit behind an API-key check has been removed rather than left
+ * dormant — it had never once run against the real API, so keeping it would
+ * have meant an untested integration one environment variable away from
+ * production on a race weekend.
  *
- * Until that key exists there is only one source, and the free tier is not a
- * fallback for it — while any F1 session is running anywhere in the world,
- * OpenF1 returns 401 to unauthenticated callers for every endpoint including
- * historical ones. There is nothing to degrade to.
+ * The seam stays. `LiveTimingSource` costs nothing to keep, it is what lets
+ * the live view render without knowing where its numbers come from, and if a
+ * free source ever appears this is the one function that has to change. Git
+ * history has the OpenF1 implementation if it is ever wanted back.
  */
 export function getTimingSource(): LiveTimingSource {
-  const key = process.env.OPENF1_API_KEY;
-  if (key) return new OpenF1TimingSource(key);
   return new JolpicaTimingSource();
-}
-
-export function hasLiveAccess(): boolean {
-  return Boolean(process.env.OPENF1_API_KEY);
 }
 
 export type { LiveTimingSource, SourceCapabilities } from "./types";

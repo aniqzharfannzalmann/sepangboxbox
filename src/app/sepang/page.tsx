@@ -1,4 +1,5 @@
 import { StatusNotice } from "@/components/StatusNotice";
+import { WeatherOutlook } from "@/components/sepang/WeatherOutlook";
 import { Button } from "@/components/ui/Button";
 import {
   BadgePill,
@@ -8,15 +9,24 @@ import {
   SpecCell,
 } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
-import { SEPANG } from "@/lib/f1/jolpica";
+import { SEPANG, getRaceWeekend } from "@/lib/f1/jolpica";
 import {
   LAST_SEPANG_RACE,
   type SepangHistory,
   type TallyEntry,
   getSepangHistory,
 } from "@/lib/f1/sepang-history";
+import { getSepangOutlook } from "@/lib/f1/weather";
 
-export const revalidate = 86400;
+/*
+ * An hour, not a day.
+ *
+ * The history on this page is settled and would happily cache for a week, but
+ * the weather section is now on it, and once the race is close enough for a
+ * real forecast a day-old one is worth very little. The upstream fetches carry
+ * their own windows underneath this.
+ */
+export const revalidate = 3600;
 
 export const metadata = {
   title: "Sepang",
@@ -121,8 +131,14 @@ function RollOfHonour({ history }: { history: SepangHistory }) {
 }
 
 export default async function SepangPage() {
-  const history = await getSepangHistory();
+  // The weather is an enhancement: if the weekend cannot be loaded, the page
+  // is still a complete history of the circuit and should render as one.
+  const [history, weekend] = await Promise.all([
+    getSepangHistory(),
+    getRaceWeekend(SEPANG.season, SEPANG.round).catch(() => null),
+  ]);
   const h = history.data;
+  const outlook = weekend ? await getSepangOutlook(weekend.sessions) : null;
 
   if (history.origin === "fallback") {
     return (
@@ -172,6 +188,12 @@ export default async function SepangPage() {
           </div>
         </Container>
       </section>
+
+      {outlook && (
+        <Container className="pt-xxl">
+          <WeatherOutlook outlook={outlook} />
+        </Container>
+      )}
 
       <Container className="py-xxl">
         <SectionLabel>Records at Sepang</SectionLabel>

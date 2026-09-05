@@ -14,17 +14,104 @@ import {
   getDriverStandingsSafe,
 } from "@/lib/f1/standings";
 import { MYT_LABEL, formatFullMyt } from "@/lib/f1/time";
-import type { RaceWeekend } from "@/lib/f1/types";
+import type { F1Session, RaceWeekend } from "@/lib/f1/types";
+import { type SepangOutlook, getSepangOutlook } from "@/lib/f1/weather";
 import { getActiveWeekend } from "@/lib/f1/weekend";
 
 /*
  * Live Hub (PRD 7.1).
  *
- * Follows whichever race is next rather than a fixed round. Pinning it to
- * Sepang left the page stale for the eleven rounds around it and would have
- * left it dead once that weekend had run; Sepang keeps a highlight of its own
- * further down instead.
+ * Sepang leads while it is still to come, and the rest of the season follows
+ * underneath it.
+ *
+ * This page used to open on whichever race was next, which is the right
+ * default for a general F1 companion and the wrong one for this app: for most
+ * of the season a reader arriving at a site called Sepang Box Box was met by
+ * Monza. The two blocks below are the same two that were always here, with
+ * their emphasis swapped — the running weekend keeps its live badge and its
+ * countdown, so the app still works as a companion on every other round.
+ *
+ * Once Sepang has run, the swap reverses on its own and the page goes back to
+ * following the next race, because a countdown to a race that has finished is
+ * worse than no countdown at all.
  */
+
+/**
+ * The Sepang hero.
+ *
+ * The weather line is the one fact here a general F1 site would not carry, so
+ * it earns its place next to the countdown: this is a tropical circuit whose
+ * race starts at three in the afternoon, and the number comes from the
+ * archive rather than from the reputation.
+ */
+function SepangHero({
+  weekend,
+  race,
+  outlook,
+}: {
+  weekend: RaceWeekend;
+  race: F1Session;
+  outlook: SepangOutlook;
+}) {
+  const raceOutlook = outlook.sessions.find((s) => s.kind === "race");
+
+  return (
+    <section className="border-b border-hairline">
+      <Container className="py-xxl">
+        <div className="flex flex-wrap items-center gap-xxs">
+          <BadgePill tone="primary">Round {weekend.round}</BadgePill>
+          <SectionLabel>Formula 1 returns to Sepang</SectionLabel>
+        </div>
+
+        <h1 className="text-display-mega text-ink mt-sm max-w-[14ch] text-balance">
+          {weekend.raceName}
+        </h1>
+
+        <p className="text-body-md text-body mt-sm max-w-[54ch]">
+          {weekend.circuitName}, {weekend.locality} · Race{" "}
+          {formatFullMyt(race.startsAtIso)} {MYT_LABEL} · first visit since 2017
+        </p>
+
+        <div className="mt-xl">
+          <SectionLabel>Lights out</SectionLabel>
+          <Countdown targetIso={race.startsAtIso} className="mt-xs" />
+        </div>
+
+        <p className="text-body-md text-body mt-lg max-w-[60ch]">
+          {raceOutlook?.origin === "forecast" &&
+          raceOutlook.rainChancePct !== null ? (
+            <>
+              <span className="text-ink">
+                {raceOutlook.rainChancePct}% chance of rain
+              </span>{" "}
+              at the start, forecast for {formatFullMyt(race.startsAtIso)}.
+            </>
+          ) : (
+            <>
+              <span className="text-ink">
+                Rain falls in {outlook.wetHourPct}% of early-October afternoons
+                here
+              </span>{" "}
+              — measured across {outlook.hoursSampled} of them since{" "}
+              {outlook.fromYear}. Sepang runs in the monsoon transition, and the
+              race starts at three in the afternoon.
+            </>
+          )}
+        </p>
+
+        <div className="flex flex-wrap gap-xs mt-xl">
+          <Button href="/sepang">Sepang history</Button>
+          <Button href="/circuits/sepang" variant="outline-on-dark">
+            Circuit guide
+          </Button>
+          <Button href="/schedule" variant="outline-on-dark">
+            Full schedule
+          </Button>
+        </div>
+      </Container>
+    </section>
+  );
+}
 
 function Hero({
   weekend,
@@ -186,18 +273,29 @@ export default async function Home() {
   // must stay pure, and this way every section agrees on "now".
   const state = getWeekendState(weekend, active.fetchedAtMs);
 
-  // Sepang is what this app is named for, so it keeps a card of its own —
-  // unless it is already the race being counted down above.
   const sepang = active.data.sepang;
-  const sepangIsNext = sepang?.round === weekend.round;
+  const sepangIsActive = sepang?.round === weekend.round;
   const sepangRace = sepang?.sessions.find((s) => s.kind === "race") ?? null;
   const sepangToCome =
     sepangRace !== null &&
     new Date(sepangRace.endsAtIso).getTime() > active.fetchedAtMs;
 
+  // Sepang leads until it has run. Once it is the active weekend the ordinary
+  // hero already is Sepang, so leading with it twice would just be repetition.
+  const leadWithSepang =
+    sepang !== null && sepangRace !== null && sepangToCome && !sepangIsActive;
+
+  const outlook = leadWithSepang
+    ? await getSepangOutlook(sepang.sessions)
+    : null;
+
   return (
     <>
-      <Hero weekend={weekend} state={state} />
+      {leadWithSepang && outlook ? (
+        <SepangHero weekend={sepang} race={sepangRace} outlook={outlook} />
+      ) : (
+        <Hero weekend={weekend} state={state} />
+      )}
 
       <Container className="py-xxl">
         {active.origin === "fallback" && (
@@ -206,24 +304,35 @@ export default async function Home() {
           </StatusNotice>
         )}
 
-        {/* The Sepang countdown, kept in view all season. */}
-        {sepang && sepangRace && sepangToCome && !sepangIsNext && (
+        {/*
+          The rest of the season, demoted but not dropped. During any other
+          round this is the part a reader actually came for, so it keeps the
+          live badge and the countdown it had when it was the hero.
+        */}
+        {leadWithSepang && (
           <section className="mb-xxl border border-hairline p-md">
             <div className="flex flex-wrap items-center gap-xxs">
-              <BadgePill tone="primary">Round {sepang.round}</BadgePill>
-              <SectionLabel>Formula 1 returns to Sepang</SectionLabel>
+              <BadgePill tone="primary">Round {weekend.round}</BadgePill>
+              {state.status === "live" && state.current ? (
+                <BadgePill tone="warning">{state.current.label} live</BadgePill>
+              ) : (
+                <SectionLabel>
+                  {state.status === "finished" ? "Last round" : "Up next"}
+                </SectionLabel>
+              )}
             </div>
             <p className="text-body-md text-ink mt-xs">
-              {sepang.raceName} · {formatFullMyt(sepangRace.startsAtIso)}{" "}
-              {MYT_LABEL}
+              {weekend.raceName} · {weekend.circuitName}
             </p>
-            <Countdown targetIso={sepangRace.startsAtIso} className="mt-md" />
+            {state.next && (
+              <Countdown targetIso={state.next.startsAtIso} className="mt-md" />
+            )}
             <div className="flex flex-wrap gap-xs mt-md">
-              <Button href="/sepang" variant="outline-on-dark">
-                Sepang history
+              <Button href="/live" variant="outline-on-dark">
+                Session timing
               </Button>
-              <Button href="/circuits/sepang" variant="outline-on-dark">
-                Circuit stats
+              <Button href="/standings" variant="outline-on-dark">
+                Standings
               </Button>
             </div>
           </section>
@@ -231,8 +340,10 @@ export default async function Home() {
 
         {state.status === "live" && (
           <StatusNotice className="mb-lg">
-            A session is running now. Live timing arrives in the next release —
-            standings below are current as of the last completed round.
+            A session is running now. This is a free, unofficial project, so
+            positions appear once the session is classified rather than lap by
+            lap — the standings below are current as of the last completed
+            round.
           </StatusNotice>
         )}
 
@@ -272,8 +383,8 @@ export default async function Home() {
         <SectionLabel>Unofficial</SectionLabel>
         <p className="text-body-md text-body mt-xs max-w-[60ch]">
           Sepang Box Box is a fan project. Championship data comes from
-          Jolpica-F1; live session data will come from OpenF1. Neither is an
-          official Formula 1 or FIA source.
+          Jolpica-F1 and weather from Open-Meteo. Neither is an official
+          Formula 1 or FIA source.
         </p>
       </Container>
     </>

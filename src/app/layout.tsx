@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s · Sepang Box Box",
   },
   description:
-    "Live timing, standings and the full weekend schedule for the 2026 Bahrain Grand Prix in Malaysia at Sepang International Circuit.",
+    "Weather, schedule, standings and nineteen years of history for the 2026 Bahrain Grand Prix in Malaysia at Sepang International Circuit.",
 };
 
 export const viewport: Viewport = {

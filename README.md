@@ -1,11 +1,24 @@
 # Sepang Box Box
 
-A realtime F1 companion for the **2026 Bahrain Grand Prix in Malaysia** at
-Sepang International Circuit, 2–4 October 2026 — Formula 1's first visit to
-Sepang since 2017.
+A companion for the **2026 Bahrain Grand Prix in Malaysia** at Sepang
+International Circuit, 2–4 October 2026 — Formula 1's first visit to Sepang
+since 2017.
 
-Standings, the weekend schedule in Malaysia Time, session timing, race and
-qualifying results, and a driver head-to-head. Mobile-first, no accounts.
+The weekend schedule in Malaysia Time, what the weather does to this circuit,
+every Malaysian Grand Prix from 1999 to 2017, the 2026 championship, and a
+driver head-to-head. Mobile-first, no accounts, no API keys, nothing to pay
+for.
+
+Two things here are specific to Sepang rather than general F1:
+
+- **Rain falls in 36% of early-October afternoons at the circuit** — measured
+  across 270 of them since 2011, not asserted from reputation. Three of the
+  five sessions run in that window and the race starts at 15:00 local.
+  `/sepang` shows the recorded conditions for these dates until the race comes
+  within forecast range, then switches to the forecast, and says which of the
+  two you are looking at.
+- **Nine years away.** The circuit's whole F1 history is on one page, from
+  Irvine in 1999 to Verstappen in 2017.
 
 > Unofficial fan project. Not affiliated with Formula 1, the FIA, or Formula
 > One Licensing B.V.
@@ -28,13 +41,12 @@ npm run dev          # http://localhost:3000
 
 ## Environment
 
-Everything runs with no configuration. All four variables are optional.
+Everything runs with no configuration, and there is no key to obtain for any of
+it. Deploying is `git push`.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `OPENF1_API_KEY` | unset | Switches live timing on. Without it the app uses post-session classifications. |
 | `JOLPICA_BASE_URL` | `https://api.jolpi.ca/ergast/f1` | Override the standings/schedule API. Point it at a dead host to exercise the fallback paths. |
-| `OPENF1_BASE_URL` | `https://api.openf1.org/v1` | Override the live timing API. |
 
 ## Data sources
 
@@ -43,10 +55,17 @@ results. Free, no auth, 4 req/s and 500 req/hour. Pages revalidate every five
 minutes, so a deployed instance makes roughly a dozen requests an hour
 regardless of traffic.
 
-**OpenF1** (`api.openf1.org`) — live session data. **Paid.** The free tier is
-not a usable fallback: while any F1 session is running anywhere in the world it
-returns `401` for *every* endpoint, including historical data from 2023. That
-is precisely when this app matters, so live timing is all-or-nothing.
+**Open-Meteo** (`api.open-meteo.com`) — weather at the circuit. Free, no key,
+no account. Forecasts reach 16 days, so for most of the build the race is
+beyond them; the Sepang page shows the historical record for these dates until
+a forecast exists, and says which of the two it is showing.
+
+**No live timing.** Second-by-second timing is only sold. OpenF1's free tier is
+not a fallback either — while any session is running anywhere in the world it
+returns `401` for *every* endpoint, including 2023 history, which is precisely
+when it would matter. This project is deliberately zero-cost, so it works from
+the official classifications published after each session and says so on the
+page rather than implying it is live.
 
 ## How live timing is wired
 
@@ -57,25 +76,21 @@ it is drawing.
 - **`jolpica.source.ts`** — free, always available. Official classifications
   published after each session. Cannot show a car moving; what it shows is
   correct.
-- **`openf1.source.ts`** — live, needs `OPENF1_API_KEY`.
 
 Each source declares a `fidelity` and a `SourceCapabilities` record, and the UI
 reads capabilities — not null values — to decide what to render. A source that
 cannot report tyres hides the column; one that can, but has not yet, shows a
 dash. Those are different states and the reader can tell them apart.
 
-Adding the key is the only change needed to go live.
+There is one implementation, and the seam is still worth keeping: it is what
+lets `/live/preview/[round]` drive the real timing view against a completed
+round, and it is the one function a free live source would arrive through.
 
-### `openf1.source.ts` is unverified
-
-It has never run against the real API, because there is no way to exercise it
-without paying. The auth header in particular is a guess. Before trusting it on
-a race weekend, confirm the header and the field names on `/position`,
-`/intervals`, `/laps`, `/stints`, `/pit`, `/race_control` and `/weather`.
-
-Its per-endpoint cache windows are load-bearing, not politeness: the sponsor
-tier allows 60 requests/minute and polling all seven endpoints at 5s would be
-84/minute and would be throttled mid-race.
+An OpenF1 adapter used to sit here behind an API-key check. It was deleted
+rather than left dormant, because it had never once run — there is no way to
+exercise OpenF1 without paying, so it was an untested integration one
+environment variable away from production on a race weekend. Git history has it
+if it is ever wanted.
 
 ## Sepang history
 

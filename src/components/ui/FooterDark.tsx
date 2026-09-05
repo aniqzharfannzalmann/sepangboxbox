@@ -33,7 +33,7 @@ const COLUMNS = [
     heading: "Data",
     links: [
       { href: "https://api.jolpi.ca", label: "Jolpica-F1", external: true },
-      { href: "https://openf1.org", label: "OpenF1", external: true },
+      { href: "https://open-meteo.com", label: "Open-Meteo", external: true },
       // CC BY 4.0 requires attribution wherever these are used.
       { href: "https://github.com/f1db/f1db", label: "F1DB", external: true },
       {
@@ -96,10 +96,10 @@ export function FooterDark() {
         <p className="text-body-sm text-muted max-w-[70ch]">
           Sepang Box Box is an unofficial fan project and is not affiliated
           with Formula 1, the FIA, or Formula One Licensing B.V. Timing and
-          championship data come from Jolpica-F1 and OpenF1, neither of which
-          is an official F1 or FIA data source. Circuit measurements are from
-          F1DB and circuit artwork from f1-circuits-svg, both used under
-          CC BY 4.0.
+          championship data come from Jolpica-F1, which is not an official F1
+          or FIA data source. Weather is from Open-Meteo. Circuit measurements
+          are from F1DB and circuit artwork from f1-circuits-svg, both used
+          under CC BY 4.0.
         </p>
       </Container>
     </footer>

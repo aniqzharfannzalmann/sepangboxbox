@@ -11,6 +11,7 @@
     "maps:circuits": "node scripts/import-circuit-maps.mjs",
     "snapshot:season": "node scripts/snapshot-season.mjs",
     "import:teams": "node scripts/import-team-stats.mjs",
+    "import:weather": "node scripts/import-sepang-weather.mjs",
     "logos:normalise": "node scripts/normalise-logos.mjs"
   },
   "dependencies": {

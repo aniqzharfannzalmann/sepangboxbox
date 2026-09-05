@@ -14,7 +14,7 @@
  */
 
 const JOLPICA = "https://api.jolpi.ca/ergast/f1";
-const OPENF1 = "https://api.openf1.org/v1";
+const OPEN_METEO = "https://api.open-meteo.com/v1";
 
 let failures = 0;
 let checks = 0;
@@ -209,27 +209,47 @@ try {
   check("pit stop request", false, error.message);
 }
 
-console.log("\nOpenF1 access tier");
+console.log("\nOpen-Meteo (weather at Sepang)");
 try {
-  const response = await fetch(`${OPENF1}/sessions?year=2024&session_name=Race`);
-  if (response.status === 401) {
-    console.log(
-      "  note  401 — anonymous access is locked (a session is live, or the free tier changed)",
-    );
-    console.log("        Live timing needs OPENF1_API_KEY. Expected on the free tier.");
-  } else if (response.ok) {
-    const rows = await response.json();
-    console.log(
-      `  note  historical access open — ${Array.isArray(rows) ? rows.length : 0} sessions returned`,
-    );
-  } else {
-    console.log(`  note  unexpected status ${response.status}`);
-  }
-  // Never a failure: this endpoint's availability is outside our control and
-  // the app is built to work without it.
-  check("OpenF1 probe completed without throwing", true);
+  // The whole reason this source was chosen: no key, no account, no card. If
+  // that ever changes, it will change here first.
+  const response = await fetch(
+    `${OPEN_METEO}/forecast?latitude=2.7603&longitude=101.7382` +
+      "&hourly=temperature_2m,relative_humidity_2m,precipitation_probability" +
+      "&timezone=Asia%2FKuala_Lumpur&forecast_days=1",
+  );
+  check("forecast responds without an API key", response.ok, `status ${response.status}`);
+
+  const json = await response.json();
+  const hourly = json.hourly ?? {};
+  check(
+    "carries the fields the weather panel reads",
+    Array.isArray(hourly.time) &&
+      Array.isArray(hourly.temperature_2m) &&
+      Array.isArray(hourly.relative_humidity_2m) &&
+      Array.isArray(hourly.precipitation_probability),
+  );
+  check(
+    "returns local Malaysian time, not UTC",
+    json.utc_offset_seconds === 28800,
+    `offset ${json.utc_offset_seconds}s`,
+  );
+
+  // How far ahead a forecast reaches decides whether the Sepang page shows a
+  // forecast or the historical record, so it is worth reporting rather than
+  // assuming. 16 days is the documented limit.
+  const far = await fetch(
+    `${OPEN_METEO}/forecast?latitude=2.7603&longitude=101.7382` +
+      "&daily=temperature_2m_max&timezone=Asia%2FKuala_Lumpur&forecast_days=16",
+  );
+  const days = (await far.json()).daily?.time ?? [];
+  const race = "2026-10-04";
+  console.log(
+    `  note  forecast reaches ${days.at(-1) ?? "?"}; race day ${race} is ` +
+      `${days.includes(race) ? "inside" : "beyond"} the window`,
+  );
 } catch (error) {
-  check("OpenF1 probe completed without throwing", false, error.message);
+  check("Open-Meteo probe completed without throwing", false, error.message);
 }
 
 /* ---------------------------------------------------------------- */
