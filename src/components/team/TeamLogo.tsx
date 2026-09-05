@@ -45,12 +45,25 @@ export function TeamLogo({
   /** The box each logo is fitted into. */
   width = 76,
   height = 28,
+  /**
+   * Render the mark in ink rather than its own colours.
+   *
+   * On by default because supplied logos are mostly dark: five of the eleven
+   * here are pure black, which is 1.18:1 against the canvas and effectively
+   * invisible. In ink they are 17.8:1, and the set reads as one family — which
+   * is also what design.md asks for, a monochrome canvas with one accent.
+   *
+   * Set false for a mark whose meaning depends on colour: flattening removes
+   * any internal structure that was only distinguished by hue.
+   */
+  mono = true,
   className,
 }: {
   constructorId: string;
   name: string;
   width?: number;
   height?: number;
+  mono?: boolean;
   className?: string;
 }) {
   const src = AVAILABLE.get(constructorId);
@@ -80,7 +93,13 @@ export function TeamLogo({
         // by the device pixel ratio. Pre-doubling it fetched roughly twice the
         // resolution needed on top of that.
         sizes={`${width}px`}
-        className="object-contain object-center"
+        className={cn(
+          "object-contain object-center",
+          // brightness(0) drives every opaque pixel to black, invert(1) takes
+          // it to white. The alpha channel is untouched, so the silhouette and
+          // its antialiased edges survive — the logo does not become a box.
+          mono && "brightness-0 invert",
+        )}
         loading="lazy"
       />
     </span>
