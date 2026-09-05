@@ -107,6 +107,17 @@ export default async function CircuitPage({
   const p = profile.data;
   const isSepang = id === "sepang";
 
+  const recent = [...p.winners].reverse().slice(0, 10);
+  // A circuit can hold two Grands Prix in one season, so the year is neither a
+  // unique key nor, on its own, an unambiguous label.
+  const seasonCounts = new Map<string, number>();
+  for (const w of p.winners) {
+    seasonCounts.set(w.season, (seasonCounts.get(w.season) ?? 0) + 1);
+  }
+  const doubledSeasons = new Set(
+    [...seasonCounts.entries()].filter(([, n]) => n > 1).map(([s]) => s),
+  );
+
   return (
     <>
       <section className="border-b border-hairline">
@@ -189,25 +200,26 @@ export default async function CircuitPage({
 
             <SectionLabel>Recent winners</SectionLabel>
             <ul className="mt-md">
-              {[...p.winners]
-                .reverse()
-                .slice(0, 10)
-                .map((w) => (
-                  <li
-                    key={w.season}
-                    className="flex items-baseline gap-xs py-sm border-b border-hairline last:border-b-0"
-                  >
-                    <span className="text-title-sm tnum text-muted w-12 shrink-0">
-                      {w.season}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-body-md text-ink">{w.driverName}</p>
-                      <p className="text-caption text-muted truncate">
-                        {w.constructorName}
-                      </p>
-                    </div>
-                  </li>
-                ))}
+              {recent.map((w) => (
+                <li
+                  key={`${w.season}-${w.round}`}
+                  className="flex items-baseline gap-xs py-sm border-b border-hairline last:border-b-0"
+                >
+                  <span className="text-title-sm tnum text-muted w-12 shrink-0">
+                    {w.season}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-body-md text-ink">{w.driverName}</p>
+                    <p className="text-caption text-muted truncate">
+                      {w.constructorName}
+                      {/* Only when the year alone is ambiguous — the Red Bull
+                          Ring held both the Austrian and Styrian GPs in 2020
+                          and again in 2021. */}
+                      {doubledSeasons.has(w.season) ? ` · ${w.raceName}` : ""}
+                    </p>
+                  </div>
+                </li>
+              ))}
             </ul>
           </>
         )}

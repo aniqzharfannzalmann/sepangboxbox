@@ -83,15 +83,22 @@ function TallyList({
 function RollOfHonour({ history }: { history: SepangHistory }) {
   // Newest first: 2017 is the race people actually remember.
   const races = [...history.winners].reverse();
-  const poleBySeason = new Map(history.poles.map((p) => [p.season, p]));
+  // Keyed on season *and* round: a circuit can hold two Grands Prix in one
+  // season (the Red Bull Ring did in 2020 and 2021), and keying on the year
+  // alone would silently drop one pole and show the other against the wrong
+  // race. Sepang has never doubled up, but the shape of the bug does not
+  // depend on that.
+  const poleByRace = new Map(
+    history.poles.map((p) => [`${p.season}-${p.round}`, p]),
+  );
 
   return (
     <ul className="mt-md">
       {races.map((race) => {
-        const pole = poleBySeason.get(race.season);
+        const pole = poleByRace.get(`${race.season}-${race.round}`);
         return (
           <li
-            key={race.season}
+            key={`${race.season}-${race.round}`}
             className="flex items-baseline gap-xs py-sm border-b border-hairline last:border-b-0"
           >
             <span className="text-title-sm tnum text-muted w-12 shrink-0">
