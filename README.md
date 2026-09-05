@@ -117,11 +117,40 @@ would fail as body text, while a decorative stripe carries no contrast
 requirement. Audi and Cadillac are new for 2026 and their values are flagged
 `provisional` in that file.
 
-Logos, where supplied, are fitted into a shared box rather than given a shared
-height — these marks range from square to 4.5:1, and a fixed height made the
-wide ones render four times the area of the square ones. `npm run logos:normalise`
-crops transparent borders so a mark centred in a large empty canvas is not
-rendered a few pixels tall, and next/image handles the rest.
+On the teams list the stripe is drawn wider than in the tables, because there
+it is what you scan by: four of the eleven liveries are neighbouring blues, and
+a 3px hairline does not separate them at a glance.
+
+Logos, where supplied, are normalised by `npm run logos:normalise` before they
+are drawn. Supplied logos are not comparable objects — these eleven run from
+square to 4.4:1, and their ink, the area actually painted, spans 16x — so
+fitting them into a shared CSS box equalises the bounding box and nothing else.
+The script instead scales each mark to a common *optical weight*, a blend of
+ink area and longest edge, and centres it on one 400x200 canvas; the component
+then draws the set at a consistent size with a single `object-contain`. Weight
+spread across the eleven falls from 16x to 1.26x.
+
+It also measures each mark and records, in
+[`src/lib/f1/team-logos.json`](src/lib/f1/team-logos.json), whether it can be
+rendered in ink. That is measured rather than judged by eye because judging it
+by eye got it wrong: inverting drives every opaque pixel to white, so Mercedes
+— a silver disc with the star cut into it by colour rather than by
+transparency — rendered as a plain white circle. A mark keeps its own colours
+only if it passes all three tests: already legible on the canvas, carrying more
+than one tone, and still holding those tones apart once resampled to the size
+it ships at. The third is what separates Mercedes from Red Bull, which has more
+tones than any other mark here but spends them on type that does not resolve at
+48px.
+
+That manifest is generated, **and committed**. It is a build input, not build
+output — `TeamLogo` imports it, so a checkout without it fails to build rather
+than merely losing its logos. `npm run logos:normalise` needs `sharp`, which is
+a devDependency for that reason; it used to be reachable only as an optional
+transitive dependency of Next.
+
+None of this makes a logo identify a team at row size; the ones supplied as
+full lockups have a wordmark four pixels tall there. The colour and the name do
+that, and the logo is a supporting mark.
 
 **No team logos are shipped.** They are registered trademarks, and no open
 dataset can license them however its own repository is licensed. To add your

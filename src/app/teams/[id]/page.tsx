@@ -82,11 +82,13 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
 
               <div className="flex items-center gap-sm mt-xs">
                 <h1 className="text-display-xl text-ink">{team.name}</h1>
+                {/* 2:1, the ratio of the canvas the marks are centred on —
+                    any other shape is just dead margin around them. */}
                 <TeamLogo
                   constructorId={id}
                   name={team.name}
                   width={132}
-                  height={48}
+                  height={66}
                 />
               </div>
             </div>

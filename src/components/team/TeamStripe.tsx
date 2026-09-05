@@ -10,9 +10,20 @@ import { teamHex } from "@/lib/f1/team-colours";
  */
 export function TeamStripe({
   constructorId,
+  /**
+   * How wide the rule is drawn, in pixels.
+   *
+   * 3px is the default and suits a dense table, where the colour is a marker
+   * on a row you are already reading. Widen it where the colour is meant to be
+   * the thing you scan by — several of these liveries are neighbouring blues
+   * (Alpine, Williams, RB, Red Bull) and a hairline is not enough to separate
+   * them at a glance.
+   */
+  width = 3,
   className,
 }: {
   constructorId: string;
+  width?: number;
   className?: string;
 }) {
   const hex = teamHex(constructorId);
@@ -21,8 +32,8 @@ export function TeamStripe({
   return (
     <span
       aria-hidden
-      className={cn("block w-[3px] self-stretch shrink-0 rounded-none", className)}
-      style={{ backgroundColor: hex }}
+      className={cn("block self-stretch shrink-0 rounded-none", className)}
+      style={{ backgroundColor: hex, width }}
     />
   );
 }
