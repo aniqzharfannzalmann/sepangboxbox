@@ -9,7 +9,11 @@ import {
   SpecCell,
 } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
-import { SEPANG, getRaceWeekend } from "@/lib/f1/jolpica";
+import {
+  HISTORY_REVALIDATE_SECONDS,
+  SEPANG,
+  getRaceWeekend,
+} from "@/lib/f1/jolpica";
 import {
   LAST_SEPANG_RACE,
   type SepangHistory,
@@ -135,7 +139,15 @@ export default async function SepangPage() {
   // is still a complete history of the circuit and should render as one.
   const [history, weekend] = await Promise.all([
     getSepangHistory(),
-    getRaceWeekend(SEPANG.season, SEPANG.round).catch(() => null),
+    // A day, not the default five minutes: this is only wanted for the session
+    // times, which were fixed when the calendar was published. Left on the
+    // default it would pull the whole page down to a five-minute revalidate
+    // and take the weather's own window with it.
+    getRaceWeekend(
+      SEPANG.season,
+      SEPANG.round,
+      HISTORY_REVALIDATE_SECONDS,
+    ).catch(() => null),
   ]);
   const h = history.data;
   const outlook = weekend ? await getSepangOutlook(weekend.sessions) : null;

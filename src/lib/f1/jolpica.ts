@@ -381,8 +381,15 @@ export async function getSeasonSchedule(
 export async function getRaceWeekend(
   season: string = SEPANG.season,
   round: string = SEPANG.round,
+  /**
+   * Defaults to the standard window, which suits a weekend in progress. A page
+   * asking about a weekend that is weeks away should pass something longer:
+   * the session times were published months ago and will not move, and the
+   * shortest fetch on a page sets that whole page's revalidate.
+   */
+  revalidate: number = REVALIDATE_SECONDS,
 ): Promise<RaceWeekend> {
-  const json = await get(`/${season}/${round}.json`);
+  const json = await get(`/${season}/${round}.json`, revalidate);
   const race = json.MRData.RaceTable?.Races?.[0];
   if (!race) {
     throw new JolpicaError(`No race found for ${season} round ${round}`, 404);

@@ -2,7 +2,11 @@ import { WeatherOutlook } from "@/components/sepang/WeatherOutlook";
 import { StatusNotice } from "@/components/StatusNotice";
 import { Button } from "@/components/ui/Button";
 import { Container, SectionLabel } from "@/components/ui/primitives";
-import { SEPANG, getRaceWeekend } from "@/lib/f1/jolpica";
+import {
+  HISTORY_REVALIDATE_SECONDS,
+  SEPANG,
+  getRaceWeekend,
+} from "@/lib/f1/jolpica";
 import type { F1Session } from "@/lib/f1/types";
 import { getSepangOutlook } from "@/lib/f1/weather";
 
@@ -71,9 +75,11 @@ export default async function SepangWeatherPreview({
   const { in: inDays } = await searchParams;
   const days = Number.isFinite(Number(inDays)) ? Number(inDays) : 3;
 
-  const weekend = await getRaceWeekend(SEPANG.season, SEPANG.round).catch(
-    () => null,
-  );
+  const weekend = await getRaceWeekend(
+    SEPANG.season,
+    SEPANG.round,
+    HISTORY_REVALIDATE_SECONDS,
+  ).catch(() => null);
 
   if (!weekend) {
     return (
