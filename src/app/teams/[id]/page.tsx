@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { StatusNotice } from "@/components/StatusNotice";
+import { DriverPortrait } from "@/components/driver/DriverPortrait";
 import { TeamLogo } from "@/components/team/TeamLogo";
 import { Button } from "@/components/ui/Button";
 import {
@@ -157,11 +158,23 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
               {lineup.map((entry) => (
                 <li
                   key={entry.driver.id}
-                  className="flex items-baseline gap-xs py-sm border-b border-hairline last:border-b-0"
+                  className="flex items-center gap-xs py-sm border-b border-hairline last:border-b-0"
                 >
                   <span className="text-title-md tnum text-ink w-8 shrink-0">
                     {entry.position}
                   </span>
+                  {/*
+                    Two drivers on this page and room to give them, so this is
+                    the largest the portrait is drawn anywhere. Centred rather
+                    than baseline-aligned, since a 64px square has no baseline
+                    worth aligning to.
+                  */}
+                  <DriverPortrait
+                    driverId={entry.driver.id}
+                    name={entry.driver.fullName}
+                    constructorId={id}
+                    size={64}
+                  />
                   <span className="flex-1 min-w-0">
                     <span className="block text-body-md text-ink">
                       {entry.driver.fullName}

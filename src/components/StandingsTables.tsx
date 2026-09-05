@@ -1,4 +1,5 @@
 import { StatusNotice } from "@/components/StatusNotice";
+import { DriverPortrait } from "@/components/driver/DriverPortrait";
 import { TeamStripe } from "@/components/team/TeamStripe";
 import { cn } from "@/lib/cn";
 import type {
@@ -86,8 +87,24 @@ export function DriverStandingsTable({
           >
             <PositionCell position={entry.position} />
             <td className={TD}>
-              <span className="flex items-stretch gap-xs">
+              {/*
+                items-center, not items-stretch: the portrait is a fixed
+                square. The stripe still runs the full height of the cell
+                because it sets self-stretch itself.
+              */}
+              <span className="flex items-center gap-xs">
                 <TeamStripe constructorId={entry.constructors[0]?.id ?? ""} />
+                {/*
+                  Small on purpose. Twenty-three rows of faces in a dense
+                  championship table is easy to overdo — this is a marker
+                  beside a name, not the subject of the row.
+                */}
+                <DriverPortrait
+                  driverId={entry.driver.id}
+                  name={entry.driver.fullName}
+                  constructorId={entry.constructors[0]?.id}
+                  size={36}
+                />
                 <span className="block">
               <span className="text-body-md text-ink">
                 {entry.driver.fullName}

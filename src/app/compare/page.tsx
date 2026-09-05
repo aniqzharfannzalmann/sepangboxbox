@@ -1,4 +1,5 @@
 import { StatusNotice } from "@/components/StatusNotice";
+import { DriverPortrait } from "@/components/driver/DriverPortrait";
 import { Button } from "@/components/ui/Button";
 import { Container, Hairline, SectionLabel } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
@@ -88,9 +89,20 @@ function StatValue({
 function ComparisonTable({
   left,
   right,
+  leftConstructorId,
+  rightConstructorId,
 }: {
   left: DriverSeasonStats;
   right: DriverSeasonStats;
+  /**
+   * Team ids for the two drivers, for the portrait fallback's colour.
+   *
+   * Passed separately because DriverSeasonStats carries constructor *names*
+   * only — it is built for display, and the caller has the standings entry
+   * with the ids on it anyway.
+   */
+  leftConstructorId?: string;
+  rightConstructorId?: string;
 }) {
   return (
     <table className="w-full mt-lg border-collapse">
@@ -101,22 +113,44 @@ function ComparisonTable({
       <thead>
         <tr className="border-b border-hairline">
           <th scope="col" className="text-left py-xs w-2/5">
-            <span className="text-body-md text-ink block">
-              {left.driver.fullName}
-            </span>
-            <span className="text-caption text-muted">
-              {left.constructorNames.join(" / ")}
+            <span className="flex items-center gap-xs">
+              <DriverPortrait
+                driverId={left.driver.id}
+                name={left.driver.fullName}
+                constructorId={leftConstructorId}
+                size={56}
+              />
+              <span className="min-w-0">
+                <span className="text-body-md text-ink block">
+                  {left.driver.fullName}
+                </span>
+                <span className="text-caption text-muted">
+                  {left.constructorNames.join(" / ")}
+                </span>
+              </span>
             </span>
           </th>
           <th scope="col" className="label-caps text-muted font-normal py-xs">
             <span className="sr-only">Statistic</span>
           </th>
+          {/* Mirrored: this column reads right-to-left, so the portrait sits
+              on the outside edge as the left one does. */}
           <th scope="col" className="text-right py-xs w-2/5">
-            <span className="text-body-md text-ink block">
-              {right.driver.fullName}
-            </span>
-            <span className="text-caption text-muted">
-              {right.constructorNames.join(" / ")}
+            <span className="flex items-center justify-end gap-xs">
+              <span className="min-w-0">
+                <span className="text-body-md text-ink block">
+                  {right.driver.fullName}
+                </span>
+                <span className="text-caption text-muted">
+                  {right.constructorNames.join(" / ")}
+                </span>
+              </span>
+              <DriverPortrait
+                driverId={right.driver.id}
+                name={right.driver.fullName}
+                constructorId={rightConstructorId}
+                size={56}
+              />
             </span>
           </th>
         </tr>
@@ -253,7 +287,12 @@ export default async function ComparePage({
         </StatusNotice>
       ) : left && right ? (
         <>
-          <ComparisonTable left={left} right={right} />
+          <ComparisonTable
+            left={left}
+            right={right}
+            leftConstructorId={leftEntry.constructors[0]?.id}
+            rightConstructorId={rightEntry.constructors[0]?.id}
+          />
           <Hairline className="my-lg" />
           <p className="text-body-sm text-muted max-w-[64ch]">
             Championship points are the official totals and include sprint
