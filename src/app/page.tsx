@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Countdown } from "@/components/Countdown";
 import { StatusNotice } from "@/components/StatusNotice";
 import { TeamStripe } from "@/components/team/TeamStripe";
@@ -56,8 +57,62 @@ function SepangHero({
   const raceOutlook = outlook.sessions.find((s) => s.kind === "race");
 
   return (
-    <section className="border-b border-hairline">
-      <Container className="py-xxl">
+    /*
+     * Full-bleed hero photograph, which design.md calls the brand's strongest
+     * visual signature and the page chrome — so it deliberately escapes the
+     * 1280px content band the rest of the page sits in.
+     *
+     * `isolate` gives the image and its scrim a stacking context of their own,
+     * so the content below only needs `relative` to sit above them.
+     */
+    <section className="relative isolate overflow-hidden border-b border-hairline">
+      <Image
+        src="/sepang-hero.webp"
+        // Decorative: the heading beside it already names the race and the
+        // circuit, so describing it again would just be read out twice.
+        alt=""
+        fill
+        // The hero image is the largest thing above the fold and therefore the
+        // LCP; without this it queues behind the rest.
+        priority
+        sizes="100vw"
+        className="object-cover object-center"
+      />
+
+      {/*
+        Two scrims, because the right one depends on how the photo is cropped.
+        Wide: the content sits in the left half, so the cover is left-biased —
+        the headline gets its contrast while the car, which is the reason to
+        use this photograph at all, stays visible bottom-right. The second
+        gradient sinks the bottom edge into the canvas so the section border
+        reads as a seam rather than a cut.
+      */}
+      <div
+        aria-hidden
+        className="absolute inset-0 hidden sm:block"
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(24,24,24,0.97) 0%, rgba(24,24,24,0.9) 34%, rgba(24,24,24,0.55) 66%, rgba(24,24,24,0.3) 100%)," +
+            "linear-gradient(180deg, rgba(24,24,24,0.5) 0%, rgba(24,24,24,0.1) 40%, rgba(24,24,24,0.8) 100%)",
+        }}
+      />
+
+      {/*
+        Narrow: object-cover crops to the middle of the frame, which is the
+        brightest part of the flag, and the text runs the full width — so a
+        left-biased gradient covers the wrong half and leaves grey body copy
+        sitting on white and red stripes. An even cover instead.
+      */}
+      <div
+        aria-hidden
+        className="absolute inset-0 sm:hidden"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(24,24,24,0.88) 0%, rgba(24,24,24,0.78) 45%, rgba(24,24,24,0.93) 100%)",
+        }}
+      />
+
+      <Container className="relative py-xxl">
         <div className="flex flex-wrap items-center gap-xxs">
           <BadgePill tone="primary">Round {weekend.round}</BadgePill>
           <SectionLabel>Formula 1 returns to Sepang</SectionLabel>
