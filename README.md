@@ -117,6 +117,10 @@ would fail as body text, while a decorative stripe carries no contrast
 requirement. Audi and Cadillac are new for 2026 and their values are flagged
 `provisional` in that file.
 
+Logos, where supplied, are resized and converted by next/image — they render at
+32-48px, and source files that large would otherwise cost more than the rest of
+the page put together.
+
 **No team logos are shipped.** They are registered trademarks, and no open
 dataset can license them however its own repository is licensed. To add your
 own, drop a file at `public/teams/<constructorId>.svg` — see
