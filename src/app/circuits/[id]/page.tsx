@@ -141,14 +141,20 @@ export default async function CircuitPage({
             {race.locality}, {race.country}
           </p>
 
-          <div className="flex flex-wrap gap-xl mt-xl">
+          <div className="grid grid-cols-2 gap-lg sm:flex sm:flex-wrap sm:gap-xl mt-xl">
             {/* Length and turns are authoritative from F1DB rather than
                 derived, so they lead. */}
             {map && <SpecCell value={`${map.lengthKm}`} label="Kilometres" accent />}
             {map && <SpecCell value={map.turns} label="Turns" />}
             <SpecCell value={p.racesHeld} label="Races held" />
             {p.lapRecord && (
-              <SpecCell value={p.lapRecord.time} label="Lap record" />
+              <SpecCell
+                value={p.lapRecord.time}
+                label="Lap record"
+                /* Full row: a lap time at 48px cannot fit a half-width grid
+                   track and would push the page sideways. */
+                className="col-span-2 sm:col-span-1"
+              />
             )}
           </div>
 

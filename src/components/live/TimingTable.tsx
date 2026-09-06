@@ -63,7 +63,7 @@ export function TimingTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[36rem] border-collapse">
+      <table className="table-cards w-full min-w-0 sm:min-w-[36rem] border-collapse">
         <caption className="sr-only">{sessionLabel} timing</caption>
         <thead>
           <tr className="border-b border-hairline">
@@ -126,24 +126,24 @@ export function TimingTable({
                 </span>
               </td>
               {showTyre && (
-                <td className={cn(TD, "text-caption text-body")}>
+                <td data-label="Tyre" className={cn(TD, "text-caption text-body")}>
                   {row.tyre ?? "—"}
                 </td>
               )}
-              <td className={cn(TD, "text-right tnum text-body-md text-ink")}>
+              <td data-label="Gap" className={cn(TD, "text-right tnum text-body-md text-ink")}>
                 {gapLabel(row)}
               </td>
               {showGapAhead && (
-                <td className={cn(TD, "text-right tnum text-body-md text-body")}>
+                <td data-label="Interval" className={cn(TD, "text-right tnum text-body-md text-body")}>
                   {row.gapToAhead ?? "—"}
                 </td>
               )}
               {showLastLap && (
-                <td className={cn(TD, "text-right tnum text-body-md text-body")}>
+                <td data-label="Last lap" className={cn(TD, "text-right tnum text-body-md text-body")}>
                   {row.lastLap ?? "—"}
                 </td>
               )}
-              <td className={cn(TD, "text-right tnum text-body-md text-body")}>
+              <td data-label="Best" className={cn(TD, "text-right tnum text-body-md text-body")}>
                 {row.bestLap ?? "—"}
               </td>
             </tr>

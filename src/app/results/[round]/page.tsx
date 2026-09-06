@@ -40,7 +40,7 @@ async function load(round: string): Promise<{
 function RaceTable({ result }: { result: RaceResult }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[34rem] border-collapse">
+      <table className="table-cards w-full min-w-0 sm:min-w-[34rem] border-collapse">
         <caption className="sr-only">{result.raceName} race result</caption>
         <thead>
           <tr className="border-b border-hairline">
@@ -101,10 +101,10 @@ function RaceTable({ result }: { result: RaceResult }) {
                     </span>
                   </span>
                 </td>
-                <td className={cn(TD, "text-right tnum text-body-md text-body")}>
+                <td data-label="Grid" className={cn(TD, "text-right tnum text-body-md text-body")}>
                   {row.gridPosition || "—"}
                 </td>
-                <td className={cn(TD, "text-right tnum text-body-md text-body")}>
+                <td data-label="Time" className={cn(TD, "text-right tnum text-body-md text-body")}>
                   {/* Lapped cars report a line gap, not a gap to the leader. */}
                   {retired
                     ? "—"
@@ -112,7 +112,7 @@ function RaceTable({ result }: { result: RaceResult }) {
                       ? `+${row.lapsDown} lap${row.lapsDown > 1 ? "s" : ""}`
                       : (row.time ?? "—")}
                 </td>
-                <td className={cn(TD, "text-right tnum text-body-md text-ink")}>
+                <td data-label="Points" className={cn(TD, "text-right tnum text-body-md text-ink")}>
                   {row.points || "—"}
                 </td>
               </tr>
@@ -127,7 +127,7 @@ function RaceTable({ result }: { result: RaceResult }) {
 function QualifyingTable({ result }: { result: QualifyingResult }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[32rem] border-collapse">
+      <table className="table-cards w-full min-w-0 sm:min-w-[32rem] border-collapse">
         <caption className="sr-only">{result.raceName} qualifying result</caption>
         <thead>
           <tr className="border-b border-hairline">
@@ -177,13 +177,13 @@ function QualifyingTable({ result }: { result: QualifyingResult }) {
                   </span>
                 </span>
               </td>
-              <td className={cn(TD, "text-right tnum text-body-md text-body")}>
+              <td data-label="Q1" className={cn(TD, "text-right tnum text-body-md text-body")}>
                 {row.q1 ?? "—"}
               </td>
-              <td className={cn(TD, "text-right tnum text-body-md text-body")}>
+              <td data-label="Q2" className={cn(TD, "text-right tnum text-body-md text-body")}>
                 {row.q2 ?? "—"}
               </td>
-              <td className={cn(TD, "text-right tnum text-body-md text-ink")}>
+              <td data-label="Q3" className={cn(TD, "text-right tnum text-body-md text-ink")}>
                 {row.q3 ?? "—"}
               </td>
             </tr>
@@ -250,15 +250,25 @@ export default async function RoundResultPage({
       {weekend && getCircuitMap(weekend.circuitId) && (
         <Link
           href={`/circuits/${weekend.circuitId}`}
-          className="flex flex-wrap items-center gap-md mt-lg border border-hairline p-md hover:bg-canvas-elevated transition-colors"
+          /*
+           * Stacked on a phone, side by side from sm up.
+           *
+           * This was a flex-wrap row whose text column carried `min-w-0`, and
+           * the two fight: min-w-0 lets the column shrink below its content
+           * rather than pushing itself onto the next line, so at 390px it
+           * collapsed to about 55px and set the circuit name one word per
+           * line. Choosing the direction explicitly is unambiguous where
+           * relying on wrap was not.
+           */
+          className="flex flex-col sm:flex-row sm:items-center gap-md mt-lg border border-hairline p-md hover:bg-canvas-elevated transition-colors"
         >
           <CircuitOutline
             circuitId={weekend.circuitId}
             name={weekend.circuitName}
-            className="max-h-[120px] w-auto max-w-[240px]"
+            className="max-h-[120px] w-auto max-w-[240px] shrink-0"
             strokePx={3}
           />
-          <span className="flex-1 min-w-0">
+          <span className="min-w-0">
             <SectionLabel>The circuit</SectionLabel>
             <span className="block text-body-md text-ink mt-xxs">
               {weekend.circuitName}

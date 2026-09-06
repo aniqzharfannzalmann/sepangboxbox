@@ -49,7 +49,7 @@ export function WeatherOutlook({ outlook }: { outlook: SepangOutlook }) {
       )}
 
       <div className="overflow-x-auto mt-md">
-        <table className="w-full min-w-[32rem] border-collapse">
+        <table className="table-cards w-full min-w-0 sm:min-w-[32rem] border-collapse">
           <caption className="sr-only">
             Conditions for each session of the 2026 Sepang race weekend
           </caption>
@@ -83,17 +83,17 @@ export function WeatherOutlook({ outlook }: { outlook: SepangOutlook }) {
                     {formatFullMyt(session.startsAtIso)} {MYT_LABEL}
                   </span>
                 </td>
-                <td className={cn(TD, "text-right tnum text-body-md text-ink")}>
+                <td data-label="Air" className={cn(TD, "text-right tnum text-body-md text-ink")}>
                   {session.airTempC === null
                     ? "—"
                     : `${session.airTempC.toFixed(0)}°`}
                 </td>
-                <td className={cn(TD, "text-right tnum text-body-md text-body")}>
+                <td data-label="Humidity" className={cn(TD, "text-right tnum text-body-md text-body")}>
                   {session.humidityPct === null
                     ? "—"
                     : `${session.humidityPct.toFixed(0)}%`}
                 </td>
-                <td className={cn(TD, "text-right")}>
+                <td data-label="Rain" className={cn(TD, "text-right")}>
                   {session.origin === "forecast" &&
                   session.rainChancePct !== null ? (
                     <>

@@ -184,11 +184,18 @@ export default async function SepangPage() {
             The cars come back in October.
           </p>
 
-          <div className="flex flex-wrap gap-xl mt-xl">
+          <div className="grid grid-cols-2 gap-lg sm:flex sm:flex-wrap sm:gap-xl mt-xl">
             <SpecCell value={YEARS_AWAY} label="Years away" accent />
             <SpecCell value={h.coverage.races} label="Races held" />
             {h.lapRecord && (
-              <SpecCell value={h.lapRecord.time} label="Lap record" />
+              <SpecCell
+                value={h.lapRecord.time}
+                label="Lap record"
+                /* A lap time at 48px is about 200px wide and cannot break, so
+                   in a two-column grid it overflows its track. Given the whole
+                   row it fits; the counts beside it are narrow and pair fine. */
+                className="col-span-2 sm:col-span-1"
+              />
             )}
           </div>
 

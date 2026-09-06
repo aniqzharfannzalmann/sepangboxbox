@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps<"/teams/[id]">) {
 
 function RecordGrid({ record }: { record: TeamRecord }) {
   return (
-    <div className="flex flex-wrap gap-xl mt-md">
+    <div className="grid grid-cols-2 gap-lg sm:flex sm:flex-wrap sm:gap-xl mt-md">
       <SpecCell value={record.titles} label="Titles" accent />
       <SpecCell value={record.wins} label="Wins" />
       <SpecCell value={record.podiums} label="Podiums" />
