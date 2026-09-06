@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { StatusNotice } from "@/components/StatusNotice";
 import { WeatherOutlook } from "@/components/sepang/WeatherOutlook";
 import { Button } from "@/components/ui/Button";
@@ -167,8 +168,57 @@ export default async function SepangPage() {
 
   return (
     <>
-      <section className="border-b border-hairline">
-        <Container className="py-xxl">
+      {/*
+       * Full-bleed hero photograph, the treatment design.md calls the page
+       * chrome — and here it is the 2010 opening lap, the whole field piling
+       * into Turn 1 at this circuit. A page about nineteen races deserves one
+       * of them behind it.
+       */}
+      <section className="relative isolate overflow-hidden border-b border-hairline">
+        <Image
+          src="/sepang-2010-opening-lap.webp"
+          // Decorative: the heading names the circuit and the years, so
+          // describing the photograph would only repeat it.
+          alt=""
+          fill
+          // Above the fold on this page, so it is the LCP.
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+
+        {/*
+          Heavier cover than the home hero, because this photograph is busy
+          everywhere. That one had a dark hillside for the type to sit on; this
+          is twenty-four cars, red and white kerbs and bright grass edge to
+          edge, with no quiet corner to exploit. Wide, it still leans left
+          where the content is, so the leading cars stay legible on the right.
+        */}
+        <div
+          aria-hidden
+          className="absolute inset-0 hidden sm:block"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(24,24,24,0.97) 0%, rgba(24,24,24,0.93) 38%, rgba(24,24,24,0.68) 70%, rgba(24,24,24,0.45) 100%)," +
+              "linear-gradient(180deg, rgba(24,24,24,0.55) 0%, rgba(24,24,24,0.25) 40%, rgba(24,24,24,0.85) 100%)",
+          }}
+        />
+
+        {/*
+          Narrow: object-cover crops a 2.09:1 photograph hard, so what is left
+          is the middle of the pack rather than any margin, and the text runs
+          full width. An even cover, and a firm one.
+        */}
+        <div
+          aria-hidden
+          className="absolute inset-0 sm:hidden"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(24,24,24,0.92) 0%, rgba(24,24,24,0.85) 45%, rgba(24,24,24,0.95) 100%)",
+          }}
+        />
+
+        <Container className="relative py-xxl">
           <BadgePill tone="primary">1999 – 2017</BadgePill>
           <h1 className="text-display-mega text-ink mt-sm max-w-[16ch] text-balance">
             Formula 1 returns to Sepang
