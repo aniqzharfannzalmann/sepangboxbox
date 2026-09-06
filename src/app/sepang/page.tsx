@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { StatusNotice } from "@/components/StatusNotice";
 import { SepangCircuitExplorer } from "@/components/sepang/SepangCircuitExplorer";
+import { SepangGrandstandGuide } from "@/components/sepang/SepangGrandstandGuide";
 import { WeatherOutlook } from "@/components/sepang/WeatherOutlook";
 import { Button } from "@/components/ui/Button";
 import {
@@ -267,6 +268,13 @@ export default async function SepangPage() {
               Track explorer
             </Button>
             <Button
+              href="#grandstand-guide"
+              variant="outline-on-dark"
+              className="w-full sm:w-auto text-center justify-center"
+            >
+              Grandstand guide
+            </Button>
+            <Button
               href="/circuits/sepang"
               variant="outline-on-dark"
               className="w-full sm:w-auto text-center justify-center"
@@ -285,6 +293,10 @@ export default async function SepangPage() {
 
       <Container id="track-explorer" className="pt-lg sm:pt-xxl">
         <SepangCircuitExplorer />
+      </Container>
+
+      <Container className="pt-lg sm:pt-xxl">
+        <SepangGrandstandGuide />
       </Container>
 
       <Container className="py-lg sm:py-xxl">
