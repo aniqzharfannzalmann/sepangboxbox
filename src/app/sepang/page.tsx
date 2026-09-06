@@ -9,11 +9,7 @@ import {
   SpecCell,
 } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
-import {
-  HISTORY_REVALIDATE_SECONDS,
-  SEPANG,
-  getRaceWeekend,
-} from "@/lib/f1/jolpica";
+import { SEPANG } from "@/lib/f1/jolpica";
 import {
   LAST_SEPANG_RACE,
   type SepangHistory,
@@ -21,6 +17,7 @@ import {
   getSepangHistory,
 } from "@/lib/f1/sepang-history";
 import { getSepangOutlook } from "@/lib/f1/weather";
+import { getSeasonScheduleSafe } from "@/lib/f1/weekend";
 
 /*
  * An hour, not a day.
@@ -137,36 +134,35 @@ function RollOfHonour({ history }: { history: SepangHistory }) {
 export default async function SepangPage() {
   // The weather is an enhancement: if the weekend cannot be loaded, the page
   // is still a complete history of the circuit and should render as one.
-  const [history, weekend] = await Promise.all([
+  const [history, season] = await Promise.all([
     getSepangHistory(),
-    // A day, not the default five minutes: this is only wanted for the session
-    // times, which were fixed when the calendar was published. Left on the
-    // default it would pull the whole page down to a five-minute revalidate
-    // and take the weather's own window with it.
-    getRaceWeekend(
-      SEPANG.season,
-      SEPANG.round,
-      HISTORY_REVALIDATE_SECONDS,
-    ).catch(() => null),
+    /*
+     * The whole schedule, not a single-round fetch.
+     *
+     * All this needs is Sepang's session times, and they are already in the
+     * committed season snapshot that getSeasonScheduleSafe falls back to — so
+     * asking this way means the weather still renders when Jolpica is down,
+     * where a bare getRaceWeekend would have taken it out too. It also reuses
+     * a request the rest of the app has already made.
+     */
+    getSeasonScheduleSafe(),
   ]);
+  const weekend =
+    season.data.find((r) => r.round === SEPANG.round) ?? null;
   const h = history.data;
   const outlook = weekend ? await getSepangOutlook(weekend.sessions) : null;
 
-  if (history.origin === "fallback") {
-    return (
-      <Container className="py-xxl">
-        <SectionLabel>Sepang International Circuit</SectionLabel>
-        <h1 className="text-display-lg text-ink mt-xs">Malaysian Grand Prix</h1>
-        <StatusNotice tone="warning" className="mt-md">
-          {history.reason}
-        </StatusNotice>
-        <Button href="/schedule" variant="outline-on-dark" className="mt-lg">
-          2026 schedule
-        </Button>
-      </Container>
-    );
-  }
-
+  /*
+   * No early return on a failed live query.
+   *
+   * This used to replace the entire page with an error and a button, which
+   * threw away the hero, the links and the weather outlook — none of which
+   * come from this data. Combined with prerendering, one transient Jolpica
+   * failure during a Vercel build baked that empty page into the static output
+   * and served it from cache. getSepangHistory now falls back to the committed
+   * snapshot, so the page renders in full and only says where the numbers came
+   * from.
+   */
   const lastWinner = h.winners.at(-1);
 
   return (
@@ -198,6 +194,12 @@ export default async function SepangPage() {
               />
             )}
           </div>
+
+          {/* Said quietly and in place, rather than instead of the page: the
+              figures are still right, they just did not come off the wire. */}
+          {history.origin === "fallback" && (
+            <StatusNotice className="mt-lg">{history.reason}</StatusNotice>
+          )}
 
           <div className="flex flex-wrap gap-xs mt-xl">
             <Button href="/schedule">2026 weekend</Button>

@@ -10,6 +10,7 @@
     "verify:apis": "node scripts/verify-apis.mjs",
     "maps:circuits": "node scripts/import-circuit-maps.mjs",
     "snapshot:season": "node scripts/snapshot-season.mjs",
+    "snapshot:sepang": "node scripts/snapshot-sepang-history.mjs",
     "import:teams": "node scripts/import-team-stats.mjs",
     "import:weather": "node scripts/import-sepang-weather.mjs",
     "logos:normalise": "node scripts/normalise-logos.mjs",

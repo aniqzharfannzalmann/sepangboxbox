@@ -10,6 +10,21 @@ import {
 } from "./jolpica";
 import { lapTimeToSeconds } from "./time";
 import type { RaceResult, WithOrigin } from "./types";
+import snapshot from "./sepang-history.static.json";
+
+/**
+ * The committed record, used when the live query fails.
+ *
+ * Cast because JSON widens the literal types: the file is generated from the
+ * same endpoints by `npm run snapshot:sepang`, and the script refuses to write
+ * one without winners.
+ */
+const SNAPSHOT = snapshot as unknown as {
+  winners: CircuitRaceEntry[];
+  poles: CircuitRaceEntry[];
+  fastest: CircuitRaceEntry[];
+  lastRace: RaceResult | null;
+};
 
 /**
  * Sepang's Formula 1 history, 1999–2017.
@@ -95,6 +110,46 @@ function fastestOf(entries: CircuitRaceEntry[]): LapRecord | null {
   return best;
 }
 
+/**
+ * Assemble the page's data from the four raw inputs.
+ *
+ * Shared by the live path and the committed snapshot so the two cannot drift:
+ * the tallies and the lap record are derived here once, and the snapshot only
+ * ever stores what came off the wire.
+ */
+function assemble(
+  rawWinners: CircuitRaceEntry[],
+  poles: CircuitRaceEntry[],
+  fastest: CircuitRaceEntry[],
+  lastRace: RaceResult | null,
+): SepangHistory {
+  // The 2026 running appears in the circuit's race list but has no result
+  // yet, so it never reaches here — the winners query only returns finished
+  // races. Guard anyway: a future season must not become a "winner".
+  const winners = rawWinners.filter(
+    (w) => Number(w.season) < Number(LAST_SEPANG_RACE.season) + 1,
+  );
+
+  return {
+    winners,
+    poles,
+    driverWins: tally(winners, (e) => e.driverId, (e) => e.driverName),
+    constructorWins: tally(
+      winners,
+      (e) => e.constructorId,
+      (e) => e.constructorName,
+    ),
+    driverPoles: tally(poles, (e) => e.driverId, (e) => e.driverName),
+    lapRecord: fastestOf(fastest),
+    coverage: {
+      races: winners.length,
+      poles: poles.length,
+      fastestLaps: fastest.length,
+    },
+    lastRace,
+  };
+}
+
 export async function getSepangHistory(): Promise<WithOrigin<SepangHistory>> {
   const fetchedAtMs = Date.now();
 
@@ -116,55 +171,43 @@ export async function getSepangHistory(): Promise<WithOrigin<SepangHistory>> {
 
     if (winnersResult.status === "rejected") throw winnersResult.reason;
 
-    // The 2026 running appears in the circuit's race list but has no result
-    // yet, so it never reaches here — the winners query only returns finished
-    // races. Guard anyway: a future season must not become a "winner".
-    const winners = winnersResult.value.filter(
-      (w) => Number(w.season) < Number(LAST_SEPANG_RACE.season) + 1,
-    );
-    const poles = polesResult.status === "fulfilled" ? polesResult.value : [];
-    const fastest =
-      fastestResult.status === "fulfilled" ? fastestResult.value : [];
-
     return {
-      data: {
-        winners,
-        poles,
-        driverWins: tally(winners, (e) => e.driverId, (e) => e.driverName),
-        constructorWins: tally(
-          winners,
-          (e) => e.constructorId,
-          (e) => e.constructorName,
-        ),
-        driverPoles: tally(poles, (e) => e.driverId, (e) => e.driverName),
-        lapRecord: fastestOf(fastest),
-        coverage: {
-          races: winners.length,
-          poles: poles.length,
-          fastestLaps: fastest.length,
-        },
-        lastRace:
-          lastRaceResult.status === "fulfilled" ? lastRaceResult.value : null,
-      },
+      data: assemble(
+        winnersResult.value,
+        polesResult.status === "fulfilled" ? polesResult.value : [],
+        fastestResult.status === "fulfilled" ? fastestResult.value : [],
+        lastRaceResult.status === "fulfilled" ? lastRaceResult.value : null,
+      ),
       origin: "live",
       fetchedAtMs,
     };
   } catch (error) {
-    console.error("[sepang-history] unavailable:", error);
+    /*
+     * Fall back to the committed snapshot rather than to nothing.
+     *
+     * This used to return empty arrays, which blanked the page — and because
+     * /sepang is prerendered, one transient Jolpica failure during a Vercel
+     * build got that empty state baked into a static page and served from
+     * cache. That is what happened on the first deploy.
+     *
+     * The snapshot is not a workaround. Sepang's nineteenth and last Grand
+     * Prix was in 2017 and its twentieth is in October 2026, so this data is
+     * finished; committing it is the same argument that already justifies
+     * season.static.json. Regenerate with `npm run snapshot:sepang`.
+     */
+    console.error("[sepang-history] live query failed, using snapshot:", error);
+
     return {
-      data: {
-        winners: [],
-        poles: [],
-        driverWins: [],
-        constructorWins: [],
-        driverPoles: [],
-        lapRecord: null,
-        coverage: { races: 0, poles: 0, fastestLaps: 0 },
-        lastRace: null,
-      },
+      data: assemble(
+        SNAPSHOT.winners,
+        SNAPSHOT.poles,
+        SNAPSHOT.fastest,
+        SNAPSHOT.lastRace,
+      ),
       origin: "fallback",
       reason:
-        "Sepang's race history is temporarily unavailable. Please try again shortly.",
+        "Live timing data is unavailable, so this is the committed record of " +
+        "Sepang's races. It is complete through 2017.",
       fetchedAtMs,
     };
   }
