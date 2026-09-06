@@ -168,6 +168,14 @@ export default async function CircuitPage({
 
           {/* Renders nothing when the circuit has no verified outline. */}
           <CircuitMap circuitId={id} name={race.circuitName} />
+
+          {isSepang && (
+            <div className="mt-xl">
+              <Button href="/sepang#track-explorer">
+                Sepang track explorer & radio →
+              </Button>
+            </div>
+          )}
         </Container>
       </section>
 

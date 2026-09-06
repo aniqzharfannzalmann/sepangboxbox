@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { StatusNotice } from "@/components/StatusNotice";
+import { SepangCircuitExplorer } from "@/components/sepang/SepangCircuitExplorer";
 import { WeatherOutlook } from "@/components/sepang/WeatherOutlook";
 import { Button } from "@/components/ui/Button";
 import {
@@ -251,9 +252,25 @@ export default async function SepangPage() {
             <StatusNotice className="mt-lg">{history.reason}</StatusNotice>
           )}
 
-          <div className="flex flex-wrap gap-xs mt-xl">
-            <Button href="/schedule">2026 weekend</Button>
-            <Button href="/circuits/sepang" variant="outline-on-dark">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-xs mt-xl w-full sm:w-auto">
+            <Button
+              href="/schedule"
+              className="w-full sm:w-auto text-center justify-center"
+            >
+              2026 weekend
+            </Button>
+            <Button
+              href="#track-explorer"
+              variant="outline-on-dark"
+              className="w-full sm:w-auto text-center justify-center"
+            >
+              Track explorer
+            </Button>
+            <Button
+              href="/circuits/sepang"
+              variant="outline-on-dark"
+              className="w-full sm:w-auto text-center justify-center"
+            >
               Circuit stats
             </Button>
           </div>
@@ -261,12 +278,16 @@ export default async function SepangPage() {
       </section>
 
       {outlook && (
-        <Container className="pt-xxl">
+        <Container className="pt-lg sm:pt-xxl">
           <WeatherOutlook outlook={outlook} />
         </Container>
       )}
 
-      <Container className="py-xxl">
+      <Container id="track-explorer" className="pt-lg sm:pt-xxl">
+        <SepangCircuitExplorer />
+      </Container>
+
+      <Container className="py-lg sm:py-xxl">
         <SectionLabel>Records at Sepang</SectionLabel>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-xl mt-md">
           <TallyList

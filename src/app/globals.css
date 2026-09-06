@@ -301,3 +301,27 @@
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
+
+/* Dedicated SVG Radar Pulse animation for track markers (immune to coordinate shifting) */
+@keyframes svgRadarPulse {
+  0% {
+    r: 9px;
+    opacity: 0.95;
+    stroke-width: 2.5px;
+  }
+  60% {
+    r: 22px;
+    opacity: 0.4;
+    stroke-width: 1.5px;
+  }
+  100% {
+    r: 28px;
+    opacity: 0;
+    stroke-width: 0.5px;
+  }
+}
+
+.animate-svg-pulse {
+  animation: svgRadarPulse 1.8s cubic-bezier(0.15, 0.7, 0.3, 1) infinite;
+  pointer-events: none;
+}
