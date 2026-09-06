@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { TopNav } from "@/components/ui/TopNav";
+import { NavigationProgressBar } from "@/components/ui/NavigationProgressBar";
 import { FooterDark } from "@/components/ui/FooterDark";
 import "./globals.css";
 
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-canvas text-body">
+        <NavigationProgressBar />
         <TopNav />
         <main className="flex-1">{children}</main>
         <FooterDark />

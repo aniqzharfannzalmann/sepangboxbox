@@ -23,18 +23,30 @@ export function SepangCircuitExplorer({
   const [activeTab, setActiveTab] = useState<"corners" | "radios">("corners");
 
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const chipsContainerRef = useRef<HTMLDivElement | null>(null);
+  const isInitialMount = useRef(true);
 
   const mapData = getCircuitMap("sepang");
   const selectedTurn =
     SEPANG_TURNS.find((t) => t.id === selectedTurnId) ?? SEPANG_TURNS[0];
 
   useEffect(() => {
+    // Prevent scrolling the page on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     const activeBtn = chipRefs.current[selectedTurnId];
-    if (activeBtn) {
-      activeBtn.scrollIntoView({
+    const container = chipsContainerRef.current;
+    if (activeBtn && container) {
+      // Scroll only the horizontal chips container, NOT the window
+      const btnLeft = activeBtn.offsetLeft;
+      const btnWidth = activeBtn.offsetWidth;
+      const containerWidth = container.offsetWidth;
+      container.scrollTo({
+        left: btnLeft - containerWidth / 2 + btnWidth / 2,
         behavior: "smooth",
-        inline: "center",
-        block: "nearest",
       });
     }
   }, [selectedTurnId]);
@@ -210,7 +222,10 @@ export function SepangCircuitExplorer({
 
             {/* Turn Quick Chips (Horizontal Scroll) */}
             <div className="mt-md pt-sm border-t border-hairline">
-              <div className="flex gap-xxs overflow-x-auto pb-xs scrollbar-none">
+              <div
+                ref={chipsContainerRef}
+                className="flex gap-xxs overflow-x-auto pb-xs scrollbar-none"
+              >
                 {SEPANG_TURNS.map((turn) => {
                   const isSelected = turn.id === selectedTurn.id;
                   return (

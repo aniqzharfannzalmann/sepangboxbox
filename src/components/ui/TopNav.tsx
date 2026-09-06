@@ -23,10 +23,13 @@ function Wordmark() {
   return (
     <Link
       href="/"
-      className="flex items-center gap-xxs shrink-0 min-h-12"
+      className="flex items-center gap-xxs shrink-0 min-h-12 group"
       aria-label="Sepang Box Box — home"
     >
-      <span aria-hidden className="block h-6 w-[6px] bg-primary" />
+      <span
+        aria-hidden
+        className="block h-6 w-[6px] bg-primary group-hover:scale-y-110 transition-transform"
+      />
       <span className="label-caps text-ink text-[13px] tracking-[1.4px]">
         Sepang Box Box
       </span>
@@ -37,9 +40,27 @@ function Wordmark() {
 export function TopNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  // Reset pending state synchronously on route change per React guidelines
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setPendingHref(null);
+  }
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  const isPending = (href: string) => pendingHref === href;
+
+  const handleNavClick = (href: string) => {
+    if (!isActive(href)) {
+      setPendingHref(href);
+      // Safety timeout in case navigation is cancelled or aborted
+      setTimeout(() => setPendingHref(null), 8000);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-canvas border-b border-hairline">
@@ -49,24 +70,45 @@ export function TopNav() {
 
           {/* Desktop menu — uppercase, 0.65px tracking (design.md §top-nav) */}
           <nav className="hidden md:flex items-center gap-md" aria-label="Main">
-            {NAV.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive(item.href) ? "page" : undefined}
-                className={cn(
-                  // design.md promises an effective 48px tap area for nav
-                  // items; py alone did not get there.
-                  "text-nav-link uppercase transition-colors",
-                  "inline-flex items-center min-h-12 px-xxs",
-                  isActive(item.href)
-                    ? "text-ink"
-                    : "text-body hover:text-ink",
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {NAV.map((item) => {
+              const active = isActive(item.href);
+              const pending = isPending(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => handleNavClick(item.href)}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    // design.md promises an effective 48px tap area for nav
+                    // items; py alone did not get there.
+                    "text-nav-link uppercase transition-all duration-150 relative",
+                    "inline-flex items-center min-h-12 px-xxs",
+                    active
+                      ? "text-ink"
+                      : pending
+                        ? "text-ink font-semibold"
+                        : "text-body hover:text-ink",
+                  )}
+                >
+                  {item.label}
+                  {/* Subtle active / pending indicator bar */}
+                  {active && (
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {pending && !active && (
+                    <span
+                      className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary animate-pulse"
+                      aria-hidden="true"
+                    />
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Hamburger below 768px (design.md §Collapsing Strategy) */}
@@ -111,21 +153,36 @@ export function TopNav() {
         >
           <Container>
             <ul className="flex flex-col py-xxs">
-              {NAV.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    aria-current={isActive(item.href) ? "page" : undefined}
-                    className={cn(
-                      "text-nav-link uppercase flex items-center h-12",
-                      isActive(item.href) ? "text-ink" : "text-body",
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
+              {NAV.map((item) => {
+                const active = isActive(item.href);
+                const pending = isPending(item.href);
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => {
+                        handleNavClick(item.href);
+                        setOpen(false);
+                      }}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "text-nav-link uppercase flex items-center justify-between h-12 border-b border-hairline/40",
+                        active
+                          ? "text-ink font-semibold"
+                          : pending
+                            ? "text-ink font-semibold"
+                            : "text-body",
+                      )}
+                    >
+                      <span>{item.label}</span>
+                      {pending && (
+                        <span className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </Container>
         </nav>

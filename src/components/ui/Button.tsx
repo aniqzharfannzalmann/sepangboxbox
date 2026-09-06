@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { type ComponentProps, type ReactNode, useState } from "react";
 import { cn } from "@/lib/cn";
 
 export type ButtonVariant =
@@ -18,7 +21,7 @@ export type ButtonVariant =
  */
 const BASE =
   "uppercase-cta rounded-none inline-flex items-center justify-center " +
-  "h-12 px-md transition-colors duration-150 select-none " +
+  "h-12 px-md transition-all duration-150 select-none relative " +
   "disabled:opacity-50 disabled:pointer-events-none";
 
 const VARIANTS: Record<ButtonVariant, string> = {
@@ -37,6 +40,7 @@ type CommonProps = {
   variant?: ButtonVariant;
   className?: string;
   children: ReactNode;
+  isLoading?: boolean;
 };
 
 type ButtonAsButton = CommonProps &
@@ -48,25 +52,73 @@ type ButtonAsLink = CommonProps &
   };
 
 export function Button(props: ButtonAsButton | ButtonAsLink) {
+  const pathname = usePathname();
+  const [navPending, setNavPending] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  // Reset nav pending state synchronously on route change per React guidelines
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    setNavPending(false);
+  }
+
+  const isActuallyLoading = props.isLoading || navPending;
+
   const classes = cn(
     BASE,
     VARIANTS[props.variant ?? "primary"],
+    isActuallyLoading && "opacity-85 pointer-events-none cursor-wait",
     props.className,
   );
 
   if (props.href !== undefined) {
-    const { variant, className, children, href, ...rest } = props;
+    const { variant, className, children, href, isLoading, onClick, ...rest } = props;
+    const isInternalPage =
+      typeof href === "string" &&
+      !href.startsWith("#") &&
+      !href.startsWith("mailto:") &&
+      !href.startsWith("tel:") &&
+      !rest.target;
+
     return (
-      <Link href={href} className={classes} {...rest}>
+      <Link
+        href={href}
+        className={classes}
+        onClick={(e) => {
+          if (isInternalPage) {
+            setNavPending(true);
+            // Safety timeout to reset after 8s in case navigation is cancelled
+            setTimeout(() => setNavPending(false), 8000);
+          }
+          onClick?.(e);
+        }}
+        {...rest}
+      >
         {children}
+        {isActuallyLoading && (
+          <span
+            className="ml-2 inline-block h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin"
+            aria-hidden="true"
+          />
+        )}
       </Link>
     );
   }
 
-  const { variant, className, children, href, ...rest } = props;
+  const { variant, className, children, href, isLoading, disabled, ...rest } = props;
   return (
-    <button className={classes} {...rest}>
+    <button
+      className={classes}
+      disabled={disabled || isActuallyLoading}
+      {...rest}
+    >
       {children}
+      {isActuallyLoading && (
+        <span
+          className="ml-2 inline-block h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent animate-spin"
+          aria-hidden="true"
+        />
+      )}
     </button>
   );
 }
