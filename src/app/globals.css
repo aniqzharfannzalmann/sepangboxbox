@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+:root[data-low-data="true"] img:not([data-essential="true"]) {
+  content-visibility: auto;
+}
+
 /*
  * Sepang Box Box — design tokens
  * Single source of truth, translated from docs/design.md.

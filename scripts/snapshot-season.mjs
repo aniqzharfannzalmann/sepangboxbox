@@ -13,11 +13,12 @@
  * Keep the two in step.
  */
 
-import { writeFileSync } from "node:fs";
+import { writeFileSync, renameSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const SEASON = "2026";
 const OUT = fileURLToPath(new URL("../src/lib/f1/season.static.json", import.meta.url));
+const TMP = `${OUT}.tmp`;
 
 const MINUTES = {
   fp1: 60,
@@ -102,7 +103,19 @@ if (thin.length > 0) {
   process.exit(1);
 }
 
-writeFileSync(OUT, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
+const rounds = snapshot.map((race) => Number(race.round));
+if (
+  snapshot.some((race) => race.season !== SEASON) ||
+  new Set(snapshot.map((race) => race.round)).size !== snapshot.length ||
+  rounds.some((round) => !Number.isInteger(round) || round < 1) ||
+  snapshot.some((race) => !race.sessions.some((s) => s.kind === "race"))
+) {
+  console.error("Schedule has invalid seasons, rounds, or race sessions — refusing to overwrite.");
+  process.exit(1);
+}
+
+writeFileSync(TMP, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
+renameSync(TMP, OUT);
 console.log(
   `Wrote ${snapshot.length} rounds (${snapshot.reduce((n, r) => n + r.sessions.length, 0)} sessions) to ${OUT}`,
 );

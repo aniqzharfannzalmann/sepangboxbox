@@ -36,8 +36,8 @@ export async function LiveView({
   notice?: ReactNode;
 }) {
 
-  const [state, rows, stints, pitLog, raceControl, weather] = await Promise.all([
-    source.getSessionState(),
+  const state = await source.getSessionState();
+  const [rows, stints, pitLog, raceControl, weather] = await Promise.all([
     source.getTimingRows(),
     source.getStints(),
     source.getPitLog(),

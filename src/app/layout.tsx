@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { TopNav } from "@/components/ui/TopNav";
 import { NavigationProgressBar } from "@/components/ui/NavigationProgressBar";
 import { FooterDark } from "@/components/ui/FooterDark";
+import { LowDataToggle } from "@/components/preferences/LowDataToggle";
 import "./globals.css";
 
 // FerrariSans is licensed. Inter 500 is the substitute documented in design.md.
@@ -24,9 +25,9 @@ const inter = Inter({
  * as nothing. Vercel supplies VERCEL_URL on every deployment; the fallback is
  * only for local work, where nothing is crawling anyway.
  */
-const siteUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : "http://localhost:3000";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+  ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined)
+  ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -50,6 +51,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <TopNav />
         <main className="flex-1">{children}</main>
         <FooterDark />
+        <div className="fixed bottom-xs right-xs z-40 bg-canvas border border-hairline px-xs py-xxs">
+          <LowDataToggle />
+        </div>
       </body>
     </html>
   );

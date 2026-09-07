@@ -63,6 +63,8 @@ export interface CircuitProfile {
    */
   ratingSeasons: { from: string; to: string } | null;
   poleDataFrom: string | null;
+  quality: "complete" | "partial";
+  warnings: string[];
 }
 
 function tally(
@@ -197,6 +199,8 @@ export async function getCircuitProfile(
           sampleSize: 0,
           ratingSeasons: null,
           poleDataFrom: null,
+          quality: "complete",
+          warnings: [],
         },
         origin: "live",
         fetchedAtMs,
@@ -206,6 +210,11 @@ export async function getCircuitProfile(
     const poles = polesR.status === "fulfilled" ? polesR.value : [];
     const fastest = fastestR.status === "fulfilled" ? fastestR.value : [];
     const rows = rowsR.status === "fulfilled" ? rowsR.value : [];
+    const warnings = [
+      polesR.status === "rejected" ? "Pole data is unavailable." : null,
+      fastestR.status === "rejected" ? "Fastest-lap data is unavailable." : null,
+      rowsR.status === "rejected" ? "Measured circuit ratings are unavailable." : null,
+    ].filter((warning): warning is string => warning !== null);
 
     let lapRecord: CircuitProfile["lapRecord"] = null;
     for (const entry of fastest) {
@@ -247,6 +256,8 @@ export async function getCircuitProfile(
             }
           : null,
         poleDataFrom: poles[0]?.season ?? null,
+        quality: warnings.length === 0 ? "complete" : "partial",
+        warnings,
       },
       origin: "live",
       fetchedAtMs,

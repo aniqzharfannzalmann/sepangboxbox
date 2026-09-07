@@ -12,6 +12,9 @@ import { cn } from "@/lib/cn";
 import { SEPANG, getQualifyingResult, getRaceResult } from "@/lib/f1/jolpica";
 import type { QualifyingResult, RaceResult } from "@/lib/f1/types";
 import { getSeasonScheduleSafe } from "@/lib/f1/weekend";
+import { SessionRecap } from "@/components/editorial/SessionRecap";
+import { buildQualifyingRecap, buildRaceRecap } from "@/lib/f1/editorial";
+import { getWeekendState } from "@/lib/f1/session-windows";
 
 export const revalidate = 300;
 
@@ -200,6 +203,10 @@ export default async function RoundResultPage({
   const { round } = await params;
   if (!/^\d{1,2}$/.test(round)) notFound();
 
+  const season = await getSeasonScheduleSafe();
+  const weekend = season.data.find((r) => r.round === round) ?? null;
+  if (!weekend) notFound();
+
   const { race, qualifying, failed } = await load(round);
 
   /*
@@ -212,9 +219,6 @@ export default async function RoundResultPage({
    * getSeasonScheduleSafe is already cached and shared with the pages that
    * loaded it first.
    */
-  const season = await getSeasonScheduleSafe();
-  const weekend = season.data.find((r) => r.round === round) ?? null;
-
   if (failed) {
     return (
       <Container className="py-xxl">
@@ -229,9 +233,28 @@ export default async function RoundResultPage({
     );
   }
 
-  if (!race && !qualifying) notFound();
+  if (!race && !qualifying) {
+    return (
+      <Container className="py-xxl">
+        <h1 className="text-display-lg text-ink">{weekend.raceName}</h1>
+        <StatusNotice tone="warning" className="mt-md">
+          Results have not been published for this round yet.
+        </StatusNotice>
+        <Button href="/results" variant="outline-on-dark" className="mt-lg">
+          All results
+        </Button>
+      </Container>
+    );
+  }
 
   const title = race?.raceName ?? qualifying?.raceName ?? `Round ${round}`;
+  const state = getWeekendState(weekend, season.fetchedAtMs);
+  const session = race ? weekend.sessions.find((item) => item.kind === "race") : weekend.sessions.find((item) => item.kind === "quali");
+  const recap = session
+    ? race
+      ? buildRaceRecap({ result: race, session, nextSession: state.next, provisional: false })
+      : buildQualifyingRecap({ result: qualifying, session, nextSession: state.next })
+    : null;
 
   return (
     <Container className="py-xxl">
@@ -282,6 +305,8 @@ export default async function RoundResultPage({
           </span>
         </Link>
       )}
+
+      {recap && <div className="mt-xl"><SessionRecap data={recap} /></div>}
 
       {race ? (
         <section className="mt-xl">

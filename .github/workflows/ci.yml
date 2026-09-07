@@ -5,9 +5,16 @@ on:
     branches: ["**"]
   pull_request:
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -24,6 +31,10 @@ jobs:
 
       - run: npx tsc --noEmit
       - run: npm run lint
+      - run: npm run verify:phase1
+      - run: npm run verify:phase2
+      - run: npm run verify:phase3
+      - run: npm run verify:phase4
 
       # The check that matters most before a deploy: this is the same build
       # Vercel runs, so a failure here is a failure there.

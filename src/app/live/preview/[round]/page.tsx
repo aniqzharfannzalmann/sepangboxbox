@@ -3,6 +3,7 @@ import { LiveView } from "@/components/live/LiveView";
 import { StatusNotice } from "@/components/StatusNotice";
 import { Button } from "@/components/ui/Button";
 import { SEPANG, getRaceWeekend } from "@/lib/f1/jolpica";
+import { getSeasonScheduleSafe } from "@/lib/f1/weekend";
 import {
   JolpicaTimingSource,
   type SourcePin,
@@ -63,9 +64,10 @@ export default async function LivePreviewPage({
     : query.session;
   const at = Array.isArray(query.at) ? query.at[0] : query.at;
 
-  // Resolve the weekend up front, whether or not a session was named. Without
-  // this an out-of-range round reaches the source and throws a 500 instead of
-  // returning a 404.
+  const season = await getSeasonScheduleSafe();
+  if (!season.data.some((race) => race.round === round)) notFound();
+
+  // Resolve the weekend up front, whether or not a session was named.
   let weekend;
   try {
     weekend = await getRaceWeekend(SEPANG.season, round);

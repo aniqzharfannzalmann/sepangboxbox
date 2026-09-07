@@ -29,7 +29,18 @@ import { lapTimeToSeconds } from "./time";
  *
  * Also the escape hatch if Jolpica ever moves or a mirror is needed.
  */
-const BASE = process.env.JOLPICA_BASE_URL ?? "https://api.jolpi.ca/ergast/f1";
+const configuredBase = process.env.JOLPICA_BASE_URL ?? "https://api.jolpi.ca/ergast/f1";
+let BASE: string;
+try {
+  const url = new URL(configuredBase);
+  const localOverride = url.hostname === "127.0.0.1" || url.hostname === "localhost";
+  if (url.protocol !== "https:" && process.env.NODE_ENV === "production" && !localOverride) {
+    throw new Error("JOLPICA_BASE_URL must use HTTPS in production.");
+  }
+  BASE = url.toString().replace(/\/$/, "");
+} catch (error) {
+  throw new Error(`Invalid JOLPICA_BASE_URL: ${String(error)}`);
+}
 
 /**
  * Jolpica allows 4 req/s and 500 req/hour unauthenticated. With ISR at five
@@ -135,6 +146,7 @@ interface WireRace {
   Sprint?: WireDateTime;
   Qualifying?: WireDateTime;
   Results?: WireResult[];
+  SprintResults?: WireResult[];
   QualifyingResults?: WireQualifyingResult[];
   PitStops?: WirePitStop[];
 }
@@ -230,6 +242,7 @@ async function get(
     response = await fetch(`${BASE}${path}`, {
       next: { revalidate },
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(10_000),
     });
   } catch (cause) {
     throw new JolpicaError(`Could not reach Jolpica (${path})`, undefined, {
@@ -244,7 +257,11 @@ async function get(
     );
   }
 
-  return (await response.json()) as MRData;
+  const json: unknown = await response.json();
+  if (!json || typeof json !== "object" || !("MRData" in json)) {
+    throw new JolpicaError(`Jolpica returned malformed data for ${path}`);
+  }
+  return json as MRData;
 }
 
 /* ------------------------------------------------------------------ */
@@ -419,6 +436,42 @@ export async function getRaceResult(
   const leaderLaps = Number(race.Results[0]?.laps ?? 0);
 
   const rows: RaceResultRow[] = race.Results.map((r) => ({
+    position: Number.isFinite(Number(r.position)) ? Number(r.position) : null,
+    positionText: r.positionText,
+    points: Number(r.points),
+    gridPosition: Number(r.grid),
+    laps: Number(r.laps),
+    lapsDown: Math.max(0, leaderLaps - Number(r.laps)),
+    status: r.status,
+    driver: toDriver(r.Driver),
+    constructor: toConstructor(r.Constructor),
+    time: r.Time?.time ?? null,
+    fastestLap: r.FastestLap?.Time?.time ?? null,
+  }));
+
+  return {
+    season: race.season,
+    round: race.round,
+    raceName: race.raceName,
+    circuitName: race.Circuit.circuitName,
+    dateIso: toIso({ date: race.date, time: race.time }) ?? race.date,
+    rows,
+  };
+}
+
+export async function getSprintResult(
+  season: string,
+  round: string,
+): Promise<RaceResult | null> {
+  const json = await get(
+    `/${season}/${round}/sprint.json?limit=100`,
+    LIVE_REVALIDATE_SECONDS,
+  );
+  const race = json.MRData.RaceTable?.Races?.[0];
+  if (!race?.SprintResults?.length) return null;
+
+  const leaderLaps = Number(race.SprintResults[0]?.laps ?? 0);
+  const rows: RaceResultRow[] = race.SprintResults.map((r) => ({
     position: Number.isFinite(Number(r.position)) ? Number(r.position) : null,
     positionText: r.positionText,
     points: Number(r.points),

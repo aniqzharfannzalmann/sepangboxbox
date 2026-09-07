@@ -18,6 +18,11 @@ import { MYT_LABEL, formatFullMyt } from "@/lib/f1/time";
 import type { F1Session, RaceWeekend } from "@/lib/f1/types";
 import { type SepangOutlook, getSepangOutlook } from "@/lib/f1/weather";
 import { getActiveWeekend } from "@/lib/f1/weekend";
+import { SessionCommandCenter } from "@/components/weekend/SessionCommandCenter";
+import { VerifiedVenueGuide } from "@/components/weekend/VerifiedVenueGuide";
+import { AddToCalendarButton } from "@/components/schedule/AddToCalendarButton";
+import { WhatToWatch } from "@/components/editorial/WhatToWatch";
+import { buildWhatToWatch } from "@/lib/f1/editorial";
 
 /*
  * Live Hub (PRD 7.1).
@@ -401,6 +406,30 @@ export default async function Home() {
             round.
           </StatusNotice>
         )}
+
+        {state.next && (
+          <div className="mb-lg">
+            <WhatToWatch data={buildWhatToWatch({
+              weekend,
+              session: state.next,
+              drivers: drivers.data?.entries ?? null,
+              constructors: constructors.data?.entries ?? null,
+            })} />
+          </div>
+        )}
+
+        <SessionCommandCenter weekend={weekend} nowMs={active.fetchedAtMs} compact />
+        {state.next && (
+          <div className="mt-xs">
+            <AddToCalendarButton
+              title={`${weekend.raceName} · ${state.next.label}`}
+              startsAtIso={state.next.startsAtIso}
+              endsAtIso={state.next.endsAtIso}
+            />
+          </div>
+        )}
+
+        {sepangIsActive && <div className="mt-lg"><VerifiedVenueGuide /></div>}
 
         <SectionLabel>Championship snapshot</SectionLabel>
 

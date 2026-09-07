@@ -6,6 +6,7 @@ import { Container, SectionLabel } from "@/components/ui/primitives";
 import { cn } from "@/lib/cn";
 import { getConstructorStandingsSafe } from "@/lib/f1/standings";
 import { getTeamStats, lineageAddsTo } from "@/lib/f1/teams";
+import { FavoriteButton } from "@/components/preferences/FavoriteButton";
 
 export const revalidate = 300;
 
@@ -65,10 +66,12 @@ export default async function TeamsPage() {
                       {entry.position}
                     </span>
 
-                    <span className="flex-1 min-w-0 self-center">
+                     <span className="flex-1 min-w-0 self-center">
                       <span className="block text-body-md text-ink">
                         {entry.constructor.name}
-                      </span>
+                     </span>
+
+                    <FavoriteButton id={id} kind="constructor" name={entry.constructor.name} />
                       <span className="block text-caption text-muted">
                         {record
                           ? `${record.titles} ${record.titles === 1 ? "title" : "titles"} · ${record.wins} ${record.wins === 1 ? "win" : "wins"}${team && lineageAddsTo(team) ? " incl. predecessors" : ""}`

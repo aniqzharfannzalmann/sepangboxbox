@@ -124,9 +124,12 @@ async function openMeteo(
   try {
     const response = await fetch(`${path}?${query}`, {
       next: { revalidate },
+      signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return null;
-    return (await response.json()) as HourlyResponse;
+    const json: unknown = await response.json();
+    if (!json || typeof json !== "object" || !("hourly" in json)) return null;
+    return json as HourlyResponse;
   } catch {
     // Weather is an enhancement on every page that shows it. A page that
     // renders without it is correct; a page that fails to render is not.

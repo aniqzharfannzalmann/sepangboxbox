@@ -7,6 +7,7 @@ import type {
   DriverStanding,
   StandingsSnapshot,
 } from "@/lib/f1/types";
+import { FavoriteButton } from "@/components/preferences/FavoriteButton";
 
 /*
  * Championship tables.
@@ -115,6 +116,7 @@ export function DriverStandingsTable({
                   ` · ${entry.wins} ${entry.wins === 1 ? "win" : "wins"}`}
               </span>
                 </span>
+                <FavoriteButton id={entry.driver.id} kind="driver" name={entry.driver.fullName} />
               </span>
             </td>
             <td className={cn(TD, "text-right tnum text-title-sm text-ink")}>
@@ -183,6 +185,7 @@ export function ConstructorStandingsTable({
                     </span>
                   )}
                 </span>
+                <FavoriteButton id={entry.constructor.id} kind="constructor" name={entry.constructor.name} />
               </span>
             </td>
             <td className={cn(TD, "text-right tnum text-title-sm text-ink")}>

@@ -21,6 +21,7 @@ import {
 } from "@/lib/f1/sepang-history";
 import { getSepangOutlook } from "@/lib/f1/weather";
 import { getSeasonScheduleSafe } from "@/lib/f1/weekend";
+import { VerifiedVenueGuide } from "@/components/weekend/VerifiedVenueGuide";
 
 /*
  * An hour, not a day.
@@ -297,6 +298,10 @@ export default async function SepangPage() {
 
       <Container className="pt-lg sm:pt-xxl">
         <SepangGrandstandGuide />
+      </Container>
+
+      <Container className="pt-lg sm:pt-xxl">
+        <VerifiedVenueGuide />
       </Container>
 
       <Container className="py-lg sm:py-xxl">

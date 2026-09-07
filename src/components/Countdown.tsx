@@ -77,6 +77,11 @@ export function Countdown({
       // The value changes every second; announcing it would be hostile.
       aria-live="off"
     >
+      <span className="sr-only">
+        {c
+          ? `${c.days} days, ${c.hours} hours, ${c.minutes} minutes and ${c.seconds} seconds remaining.`
+          : "Countdown loading."}
+      </span>
       <Unit value={c ? String(c.days) : "–"} label="Days" />
       <Unit value={c ? pad2(c.hours) : "––"} label="Hrs" />
       <Unit value={c ? pad2(c.minutes) : "––"} label="Min" />

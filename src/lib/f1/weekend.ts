@@ -1,6 +1,7 @@
 import "server-only";
 
-import { SEPANG, getSeasonSchedule } from "./jolpica";
+import { SEPANG } from "./jolpica";
+import { gatewaySeasonSchedule } from "./gateway";
 import seasonSnapshot from "./season.static.json";
 import type { RaceWeekend, WithOrigin } from "./types";
 
@@ -20,19 +21,58 @@ import type { RaceWeekend, WithOrigin } from "./types";
  */
 const SNAPSHOT = seasonSnapshot as RaceWeekend[];
 
+export function validateSeasonSchedule(
+  races: RaceWeekend[],
+  expectedSeason = SNAPSHOT[0]?.season,
+): string | null {
+  if (races.length === 0) return "Schedule feed returned no races.";
+  if (races.some((race) => race.season !== expectedSeason)) {
+    return "Schedule feed returned an unexpected season.";
+  }
+
+  const rounds = races.map((race) => Number(race.round));
+  if (
+    rounds.some((round) => !Number.isInteger(round) || round < 1) ||
+    new Set(races.map((race) => race.round)).size !== races.length
+  ) {
+    return "Schedule feed returned invalid or duplicate rounds.";
+  }
+
+  if (!races.some((race) => race.circuitId === SEPANG.circuitId)) {
+    return "Schedule feed does not contain Sepang.";
+  }
+
+  for (const race of races) {
+    if (!race.sessions.some((session) => session.kind === "race")) {
+      return `Schedule feed has no race session for round ${race.round}.`;
+    }
+    for (const session of race.sessions) {
+      const starts = new Date(session.startsAtIso).getTime();
+      const ends = new Date(session.endsAtIso).getTime();
+      if (!Number.isFinite(starts) || !Number.isFinite(ends) || ends <= starts) {
+        return `Schedule feed has invalid timing for round ${race.round}.`;
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function getSeasonScheduleSafe(): Promise<
   WithOrigin<RaceWeekend[]>
 > {
   const fetchedAtMs = Date.now();
 
   try {
-    const data = await getSeasonSchedule();
-    // A well-formed response for the wrong season is still the wrong data.
-    if (data.length === 0 || data[0]?.season !== SNAPSHOT[0]?.season) {
+    const gateway = await gatewaySeasonSchedule();
+    const data = gateway.data;
+    if (!data) throw new Error(gateway.warnings[0] ?? "Schedule unavailable");
+    const validationError = validateSeasonSchedule(data);
+    if (validationError) {
       return {
         data: SNAPSHOT,
         origin: "fallback",
-        reason: "Schedule feed returned an unexpected season.",
+        reason: validationError,
         fetchedAtMs,
       };
     }
@@ -82,6 +122,9 @@ export function pickActiveWeekend(
   races: RaceWeekend[],
   nowMs: number,
 ): ActiveWeekend {
+  if (races.length === 0) {
+    throw new Error("Cannot select an active weekend from an empty schedule.");
+  }
   const upcoming = races.filter((r) => endOfWeekend(r) > nowMs);
   const sepang = races.find((r) => r.circuitId === SEPANG.circuitId) ?? null;
 

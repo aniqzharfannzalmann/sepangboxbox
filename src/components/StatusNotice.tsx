@@ -12,14 +12,16 @@ export function StatusNotice({
   tone = "info",
   children,
   className,
+  role,
 }: {
   tone?: "info" | "warning";
   children: ReactNode;
   className?: string;
+  role?: "status" | "alert" | "note";
 }) {
   return (
     <p
-      role="status"
+      role={role}
       className={cn(
         "text-body-sm flex items-start gap-xxs border-l-2 pl-xs py-xxs",
         tone === "warning"

@@ -25,7 +25,7 @@
  * Re-run it after the 2026 race, when there will be a twentieth winner.
  */
 
-import { writeFileSync } from "node:fs";
+import { writeFileSync, renameSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const BASE = process.env.JOLPICA_BASE_URL ?? "https://api.jolpi.ca/ergast/f1";
@@ -35,6 +35,7 @@ const LAST_RACE = { season: "2017", round: "15" };
 const OUT = fileURLToPath(
   new URL("../src/lib/f1/sepang-history.static.json", import.meta.url),
 );
+const TMP = `${OUT}.tmp`;
 
 async function get(path) {
   const response = await fetch(`${BASE}${path}`, {
@@ -96,13 +97,16 @@ const lastRace = lastRaceWire
       raceName: lastRaceWire.raceName,
       circuitName: lastRaceWire.Circuit.circuitName,
       dateIso: `${lastRaceWire.date}T${lastRaceWire.time ?? "00:00:00Z"}`,
-      rows: (lastRaceWire.Results ?? []).map((r) => ({
+        rows: (lastRaceWire.Results ?? []).map((r) => ({
         position: /^\d+$/.test(r.positionText) ? Number(r.position) : null,
         positionText: r.positionText,
         points: Number(r.points),
         gridPosition: Number(r.grid),
         laps: Number(r.laps),
-        lapsDown: 0,
+        lapsDown: Math.max(
+          0,
+          Number(lastRaceWire.Results?.[0]?.laps ?? 0) - Number(r.laps),
+        ),
         driver: {
           id: r.Driver.driverId,
           code: r.Driver.code ?? null,
@@ -135,8 +139,18 @@ if (winners.length === 0) {
   process.exit(1);
 }
 
+if (
+  !lastRace ||
+  lastRace.season !== LAST_RACE.season ||
+  lastRace.round !== LAST_RACE.round ||
+  lastRace.rows.length === 0
+) {
+  console.error("Last Sepang race is not the expected complete 2017 result.");
+  process.exit(1);
+}
+
 writeFileSync(
-  OUT,
+  TMP,
   `${JSON.stringify(
     {
       $comment:
@@ -152,6 +166,7 @@ writeFileSync(
   )}\n`,
   "utf8",
 );
+renameSync(TMP, OUT);
 
 console.log(`  winners      ${winners.length}`);
 console.log(`  poles        ${poles.length}`);

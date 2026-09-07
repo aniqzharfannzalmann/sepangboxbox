@@ -198,6 +198,12 @@ export default async function CircuitPage({
                 : ""}
               , not from published ratings.
             </p>
+            {p.quality === "partial" && (
+              <StatusNotice tone="warning" className="mt-md">
+                Some historical sections are temporarily unavailable. The
+                available measurements are shown below.
+              </StatusNotice>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-lg mt-lg">
               {p.ratings.map((rating) => (

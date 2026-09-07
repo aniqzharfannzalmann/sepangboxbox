@@ -19,6 +19,14 @@ import {
 } from "@/lib/f1/time";
 import type { F1Session, RaceWeekend } from "@/lib/f1/types";
 import { getSeasonScheduleSafe, pickActiveWeekend } from "@/lib/f1/weekend";
+import { SessionCommandCenter } from "@/components/weekend/SessionCommandCenter";
+import { WeekendTimeline } from "@/components/weekend/WeekendTimeline";
+import { AddToCalendarButton } from "@/components/schedule/AddToCalendarButton";
+import { LowDataToggle } from "@/components/preferences/LowDataToggle";
+import { WhatToWatch } from "@/components/editorial/WhatToWatch";
+import { buildWhatToWatch } from "@/lib/f1/editorial";
+import { getDriverStandingsSafe } from "@/lib/f1/standings";
+import { getConstructorStandingsSafe } from "@/lib/f1/standings";
 
 export const metadata = {
   title: "Schedule",
@@ -146,6 +154,8 @@ export default async function SchedulePage() {
   const nextState = getWeekendState(next, nowMs);
   // The single next session in the season, as "round-kind".
   const nextKey = nextState.next ? `${next.round}-${nextState.next.kind}` : null;
+  const [drivers, constructors] = await Promise.all([getDriverStandingsSafe(), getConstructorStandingsSafe()]);
+  const watchSession = nextState.next ?? next.sessions[0];
 
   return (
     <Container className="py-xxl">
@@ -153,6 +163,9 @@ export default async function SchedulePage() {
         All times in {MYT_LABEL} · Malaysia and Singapore, UTC+8
       </SectionLabel>
       <h1 className="text-display-lg text-ink mt-xs">2026 schedule</h1>
+      <div className="flex flex-wrap gap-md mt-xs">
+        <LowDataToggle />
+      </div>
 
       {season.origin === "fallback" && (
         <StatusNotice tone="warning" className="mt-md">
@@ -193,7 +206,24 @@ export default async function SchedulePage() {
           )}
 
           <div className="mt-lg">
-            <SessionDays weekend={next} nowMs={nowMs} nextKey={nextKey} />
+            <SessionCommandCenter weekend={next} nowMs={nowMs} />
+            {watchSession && (
+              <div className="mt-xl">
+                <WhatToWatch data={buildWhatToWatch({ weekend: next, session: watchSession, drivers: drivers.data?.entries ?? null, constructors: constructors.data?.entries ?? null })} />
+              </div>
+            )}
+            {nextState.next && (
+              <div className="mt-xs">
+                <AddToCalendarButton
+                  title={`${next.raceName} · ${nextState.next.label}`}
+                  startsAtIso={nextState.next.startsAtIso}
+                  endsAtIso={nextState.next.endsAtIso}
+                />
+              </div>
+            )}
+            <div className="mt-xl">
+              <WeekendTimeline weekend={next} nowMs={nowMs} />
+            </div>
           </div>
         </section>
       )}

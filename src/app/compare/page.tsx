@@ -6,12 +6,17 @@ import { cn } from "@/lib/cn";
 import { getDriverStats } from "@/lib/f1/compare";
 import { getDriverStandingsSafe } from "@/lib/f1/standings";
 import type { DriverSeasonStats } from "@/lib/f1/types";
+import { CopyLinkButton } from "@/components/share/CopyLinkButton";
 
-export const metadata = {
-  title: "Compare drivers",
-  description:
-    "Compare any two Formula 1 drivers' 2026 season records side by side — points, wins, podiums and average finish.",
-};
+export async function generateMetadata({ searchParams }: PageProps<"/compare">) {
+  const params = await searchParams;
+  const a = Array.isArray(params.a) ? params.a[0] : params.a;
+  const b = Array.isArray(params.b) ? params.b[0] : params.b;
+  return {
+    title: a && b ? `${a} vs ${b}` : "Compare drivers",
+    description: "Compare Formula 1 drivers across the 2026 season.",
+  };
+}
 
 /*
  * Compare Drivers (PRD 7.5).
@@ -316,6 +321,9 @@ export default async function ComparePage({
             leftConstructorId={leftEntry.constructors[0]?.id}
             rightConstructorId={rightEntry.constructors[0]?.id}
           />
+          <div className="flex flex-wrap gap-md mt-md">
+            <CopyLinkButton />
+          </div>
           <Hairline className="my-lg" />
           <p className="text-body-sm text-muted max-w-[64ch]">
             Championship points are the official totals and include sprint

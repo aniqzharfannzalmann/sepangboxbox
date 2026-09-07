@@ -2,8 +2,6 @@ import "server-only";
 
 import {
   getPitStops,
-  getQualifyingResult,
-  getRaceResult,
   getRaceWeekend,
 } from "../jolpica";
 import { getWeekendState } from "../session-windows";
@@ -17,8 +15,8 @@ import type {
   TimingRow,
   Weather,
 } from "../types";
-import { getSepangWeatherNow } from "../weather";
 import { getActiveWeekend } from "../weekend";
+import { gatewayRaceResult, gatewaySprintResult, gatewayQualifyingResult, gatewayWeather } from "../gateway";
 import type { LiveTimingSource, SourceCapabilities } from "./types";
 
 /**
@@ -117,7 +115,9 @@ export class JolpicaTimingSource implements LiveTimingSource {
     const { season, round } = state.weekend;
 
     if (session.kind === "race" || session.kind === "sprint") {
-      return this.raceRows(season, round);
+       return session.kind === "sprint"
+         ? this.sprintRows(season, round)
+         : this.raceRows(season, round);
     }
     if (session.kind === "quali" || session.kind === "sprint-quali") {
       return this.qualifyingRows(season, round);
@@ -132,7 +132,7 @@ export class JolpicaTimingSource implements LiveTimingSource {
   ): Promise<TimingRow[] | null> {
     let result;
     try {
-      result = await getRaceResult(season, round);
+      result = (await gatewayRaceResult(season, round)).data;
     } catch {
       return null;
     }
@@ -158,13 +158,44 @@ export class JolpicaTimingSource implements LiveTimingSource {
     }));
   }
 
+  private async sprintRows(
+    season: string,
+    round: string,
+  ): Promise<TimingRow[] | null> {
+    let result;
+    try {
+      result = (await gatewaySprintResult(season, round)).data;
+    } catch {
+      return null;
+    }
+    if (!result) return null;
+
+    return result.rows.map((row) => ({
+      position: row.position,
+      positionText: row.positionText,
+      driver: row.driver,
+      constructor: row.constructor,
+      gapToLeader: row.time,
+      gapToAhead: null,
+      lastLap: null,
+      bestLap: row.fastestLap,
+      lapsCompleted: row.laps,
+      lapsDown: row.lapsDown,
+      tyre: null,
+      stintLaps: null,
+      inPit: false,
+      status: row.status,
+      retired: row.position === null || !/^\d+$/.test(row.positionText),
+    }));
+  }
+
   private async qualifyingRows(
     season: string,
     round: string,
   ): Promise<TimingRow[] | null> {
     let result;
     try {
-      result = await getQualifyingResult(season, round);
+      result = (await gatewayQualifyingResult(season, round)).data;
     } catch {
       return null;
     }
@@ -222,7 +253,7 @@ export class JolpicaTimingSource implements LiveTimingSource {
     const state = await this.getSessionState();
     const session = state.session;
     if (!session) return null;
-    if (session.kind !== "race" && session.kind !== "sprint") return [];
+    if (session.kind !== "race") return [];
 
     try {
       return await getPitStops(state.weekend.season, state.weekend.round);
@@ -251,6 +282,6 @@ export class JolpicaTimingSource implements LiveTimingSource {
   async getWeather(): Promise<Weather | null> {
     const { weekend } = await this.getSessionState();
     if (weekend.circuitId !== "sepang") return null;
-    return getSepangWeatherNow();
+    return (await gatewayWeather()).data;
   }
 }

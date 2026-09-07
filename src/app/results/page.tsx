@@ -33,12 +33,12 @@ export default async function ResultsPage() {
       <SectionLabel>2026 season</SectionLabel>
       <h1 className="text-display-lg text-ink mt-xs">Results</h1>
 
-      {season.origin === "fallback" ? (
+      {season.origin === "fallback" && (
         <StatusNotice tone="warning" className="mt-md">
           {season.reason}
         </StatusNotice>
-      ) : (
-        <ul className="mt-lg">
+      )}
+      <ul className="mt-lg">
           {rounds.map(({ race, startsAtIso, finished }) => {
             const isSepang = race.circuitId === "sepang";
             const row = (
@@ -88,8 +88,7 @@ export default async function ResultsPage() {
               </li>
             );
           })}
-        </ul>
-      )}
+      </ul>
     </Container>
   );
 }

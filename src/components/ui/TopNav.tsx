@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { Container } from "./primitives";
 
@@ -41,6 +41,7 @@ export function TopNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [prevPathname, setPrevPathname] = useState(pathname);
 
   // Reset pending state synchronously on route change per React guidelines
@@ -56,11 +57,16 @@ export function TopNav() {
 
   const handleNavClick = (href: string) => {
     if (!isActive(href)) {
+      if (pendingTimer.current) clearTimeout(pendingTimer.current);
       setPendingHref(href);
       // Safety timeout in case navigation is cancelled or aborted
-      setTimeout(() => setPendingHref(null), 8000);
+      pendingTimer.current = setTimeout(() => setPendingHref(null), 8000);
     }
   };
+
+  useEffect(() => () => {
+    if (pendingTimer.current) clearTimeout(pendingTimer.current);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-canvas border-b border-hairline">

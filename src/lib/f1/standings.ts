@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getConstructorStandings, getDriverStandings } from "./jolpica";
+import { gatewayConstructorStandings, gatewayDriverStandings } from "./gateway";
 import type {
   ConstructorStanding,
   DriverStanding,
@@ -22,7 +22,11 @@ export async function getDriverStandingsSafe(): Promise<
 > {
   const fetchedAtMs = Date.now();
   try {
-    return { data: await getDriverStandings(), origin: "live", fetchedAtMs };
+    const gateway = await gatewayDriverStandings();
+    const data = gateway.data;
+    if (!data) throw new Error(gateway.warnings[0] ?? "Driver standings unavailable");
+    if (!data.season || data.entries.length === 0) throw new Error("Empty driver standings");
+    return { data, origin: "live", fetchedAtMs };
   } catch {
     return {
       data: null,
@@ -38,7 +42,11 @@ export async function getConstructorStandingsSafe(): Promise<
 > {
   const fetchedAtMs = Date.now();
   try {
-    return { data: await getConstructorStandings(), origin: "live", fetchedAtMs };
+    const gateway = await gatewayConstructorStandings();
+    const data = gateway.data;
+    if (!data) throw new Error(gateway.warnings[0] ?? "Constructor standings unavailable");
+    if (!data.season || data.entries.length === 0) throw new Error("Empty constructor standings");
+    return { data, origin: "live", fetchedAtMs };
   } catch {
     return {
       data: null,

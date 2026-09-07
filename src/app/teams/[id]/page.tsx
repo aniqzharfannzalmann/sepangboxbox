@@ -13,6 +13,7 @@ import {
 import { teamColour } from "@/lib/f1/team-colours";
 import { getConstructorStandingsSafe, getDriverStandingsSafe } from "@/lib/f1/standings";
 import { getTeamStats, lineageAddsTo, type TeamRecord } from "@/lib/f1/teams";
+import { FavoriteButton } from "@/components/preferences/FavoriteButton";
 
 export const revalidate = 300;
 
@@ -95,6 +96,7 @@ export default async function TeamPage({ params }: PageProps<"/teams/[id]">) {
                   width={132}
                   height={66}
                 />
+                <FavoriteButton id={id} kind="constructor" name={team.name} />
               </div>
             </div>
           </div>
