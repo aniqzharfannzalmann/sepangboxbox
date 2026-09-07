@@ -23,6 +23,7 @@ import { VerifiedVenueGuide } from "@/components/weekend/VerifiedVenueGuide";
 import { AddToCalendarButton } from "@/components/schedule/AddToCalendarButton";
 import { WhatToWatch } from "@/components/editorial/WhatToWatch";
 import { buildWhatToWatch } from "@/lib/f1/editorial";
+import { FavouriteHighlights } from "@/components/preferences/FavouriteHighlights";
 
 /*
  * Live Hub (PRD 7.1).
@@ -430,6 +431,15 @@ export default async function Home() {
         )}
 
         {sepangIsActive && <div className="mt-lg"><VerifiedVenueGuide /></div>}
+
+        {(drivers.data || constructors.data) && (
+          <div className="my-lg">
+            <FavouriteHighlights
+              drivers={drivers.data?.entries ?? []}
+              constructors={constructors.data?.entries ?? []}
+            />
+          </div>
+        )}
 
         <SectionLabel>Championship snapshot</SectionLabel>
 

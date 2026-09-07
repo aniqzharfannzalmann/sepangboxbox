@@ -56,6 +56,35 @@ export function getWeekendState(
 }
 
 /**
+ * How long after the flag a classification stays labelled provisional.
+ * Stewards' decisions and post-race checks routinely land inside this window
+ * (PRD 10.2), and a table that silently claims to be final while a penalty is
+ * pending is worse than one that admits it is still settling.
+ */
+export const PROVISIONAL_MINUTES = 60;
+
+/**
+ * Whether a just-published classification should still be called provisional.
+ *
+ * Shared by the live timing source and the shareable result card. It lived as
+ * a private constant inside the timing source, which meant the card — the one
+ * artefact that leaves the site and gets posted to WhatsApp, where nobody can
+ * see a correction — was the only surface with no notion of the window at all.
+ */
+export function isClassificationProvisional(
+  weekend: Pick<RaceWeekend, "sessions">,
+  now: number = Date.now(),
+): boolean {
+  const state = getWeekendState(weekend, now);
+  const session = state.current ?? state.previous;
+  if (!session) return false;
+  if (state.status === "live") return true;
+
+  const endedMsAgo = now - new Date(session.endsAtIso).getTime();
+  return endedMsAgo >= 0 && endedMsAgo < PROVISIONAL_MINUTES * 60_000;
+}
+
+/**
  * The instant the page should count down to: the next session if one is
  * pending, otherwise nothing. Null means there is no countdown to show.
  */

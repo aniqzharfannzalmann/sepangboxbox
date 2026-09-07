@@ -1,5 +1,3 @@
-import { existsSync, readdirSync } from "node:fs";
-import path from "node:path";
 import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { teamHex } from "@/lib/f1/team-colours";
@@ -7,9 +5,8 @@ import { teamHex } from "@/lib/f1/team-colours";
 /**
  * A driver's face, if one has been supplied.
  *
- * Driver photographs are somebody's copyright, so none are shipped here. This
- * is the slot: put a full-body original in assets/drivers/<driverId>.png, run
- * `npm run drivers:normalise`, and it appears wherever drivers are listed.
+ * Driver photographs are generated into public/drivers by the normalisation
+ * script and mapped here explicitly so this component remains browser-safe.
  *
  * Ids are the Ergast/Jolpica ones, so `max_verstappen` and `arvid_lindblad`
  * carry underscores. A file whose name does not match is not found, and the
@@ -17,39 +14,38 @@ import { teamHex } from "@/lib/f1/team-colours";
  */
 
 /*
- * Discovery is by directory listing, not by the generated manifest.
- *
- * driver-portraits.json records the crop the importer chose for each driver,
- * which is what makes a bad crop reviewable and overridable — but it is a
- * record of that decision, not something the rendering needs. Reading the
- * directory keeps this component true to what is actually on disk.
+ * The explicit map also provides a predictable fallback for a newly added
+ * driver: initials render until the public asset is deliberately mapped.
  */
-const PORTRAIT_DIR = path.join(process.cwd(), "public", "drivers");
-
-function listPortraits(): Map<string, string> {
-  const found = new Map<string, string>();
-  if (!existsSync(PORTRAIT_DIR)) return found;
-
-  for (const file of readdirSync(PORTRAIT_DIR)) {
-    const ext = path.extname(file).toLowerCase();
-    if (![".webp", ".png", ".jpg", ".jpeg"].includes(ext)) continue;
-    found.set(path.basename(file, ext), `/drivers/${file}`);
-  }
-  return found;
-}
-
 /**
- * Cached in production, re-read in development.
- *
- * In production these change only on deploy, so reading the directory once per
- * process is right. In development they change while the server is running —
- * that is the whole workflow for adding a driver — and a cached listing taken
- * before the file existed means the portrait does not appear and the only cure
- * is a restart. That wasted two verification passes before it was worth
- * fixing.
+ * Public assets are resolved from the browser-safe manifest. Keeping discovery
+ * out of this component is important: DriverPortrait is rendered inside client
+ * trees, so it must never import node:fs or node:path.
  */
-const CACHED = process.env.NODE_ENV === "production" ? listPortraits() : null;
-const available = () => CACHED ?? listPortraits();
+const PORTRAITS: Record<string, string> = {
+  albon: "/drivers/albon.webp",
+  alonso: "/drivers/alonso.webp",
+  antonelli: "/drivers/antonelli.webp",
+  arvid_lindblad: "/drivers/arvid_lindblad.webp",
+  bearman: "/drivers/bearman.webp",
+  bottas: "/drivers/bottas.webp",
+  bortoleto: "/drivers/bortoleto.webp",
+  colapinto: "/drivers/colapinto.webp",
+  gasly: "/drivers/gasly.webp",
+  hadjar: "/drivers/hadjar.webp",
+  hamilton: "/drivers/hamilton.webp",
+  hulkenberg: "/drivers/hulkenberg.webp",
+  lawson: "/drivers/lawson.webp",
+  leclerc: "/drivers/leclerc.webp",
+  max_verstappen: "/drivers/max_verstappen.webp",
+  norris: "/drivers/norris.webp",
+  ocon: "/drivers/ocon.webp",
+  perez: "/drivers/perez.webp",
+  piastri: "/drivers/piastri.webp",
+  russell: "/drivers/russell.webp",
+  sainz: "/drivers/sainz.webp",
+  stroll: "/drivers/stroll.webp",
+};
 
 /**
  * Initials, from the parts of a name rather than from its first two letters.
@@ -83,7 +79,7 @@ export function DriverPortrait({
   size?: number;
   className?: string;
 }) {
-  const src = available().get(driverId);
+  const src = PORTRAITS[driverId];
   const hex = constructorId ? teamHex(constructorId) : null;
 
   /*

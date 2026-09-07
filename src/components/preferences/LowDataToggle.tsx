@@ -5,6 +5,14 @@ import { useSyncExternalStore } from "react";
 const KEY = "sepang-box-box:low-data";
 const EVENT = "sepang-box-box:preferences";
 
+function readLowData() {
+  try {
+    return localStorage.getItem(KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export function LowDataToggle() {
   const enabled = useSyncExternalStore(
     (onChange) => {
@@ -15,7 +23,7 @@ export function LowDataToggle() {
         window.removeEventListener("storage", onChange);
       };
     },
-    () => localStorage.getItem(KEY) === "true",
+    readLowData,
     () => false,
   );
 

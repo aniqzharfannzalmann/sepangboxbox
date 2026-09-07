@@ -1,5 +1,25 @@
 import { Container, Hairline } from "./primitives";
 
+/*
+ * Where these may be mounted as a `loading.tsx`.
+ *
+ * Never above a route that can call `notFound()`. A loading boundary is a
+ * Suspense boundary, and Suspense makes Next stream the response: the status
+ * line is flushed before the page body runs, so a later `notFound()` cannot
+ * set 404 any more. The reader still sees the not-found page, but it arrives
+ * with HTTP 200 — crawlers index missing rounds, and uptime checks pass on
+ * pages that do not exist.
+ *
+ * This is not hypothetical. A root `src/app/loading.tsx` once covered the
+ * whole app, and /results/99, /circuits/nope, /teams/nope and
+ * /live/preview/99 all answered 200. `npm run verify:routing` now walks the
+ * route tree and fails the build if a loading boundary sits at or above a
+ * page that calls `notFound()`.
+ *
+ * Mounting one on a route that only ever renders (`/compare`, `/sepang`) is
+ * exactly what these are for.
+ */
+
 /**
  * TableSkeleton: Placeholder shaped like standings, results, and table pages.
  */

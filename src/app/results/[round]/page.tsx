@@ -14,9 +14,29 @@ import type { QualifyingResult, RaceResult } from "@/lib/f1/types";
 import { getSeasonScheduleSafe } from "@/lib/f1/weekend";
 import { SessionRecap } from "@/components/editorial/SessionRecap";
 import { buildQualifyingRecap, buildRaceRecap } from "@/lib/f1/editorial";
-import { getWeekendState } from "@/lib/f1/session-windows";
+import { getWeekendState, isClassificationProvisional } from "@/lib/f1/session-windows";
+import { ShareResultButton } from "@/components/share/ShareResultButton";
 
 export const revalidate = 300;
+
+export async function generateMetadata({ params }: PageProps<"/results/[round]">) {
+  const { round } = await params;
+  const season = await getSeasonScheduleSafe();
+  const weekend = season.data.find((item) => item.round === round);
+  const title = weekend ? `${weekend.raceName} results` : `Round ${round} results`;
+  return {
+    title,
+    openGraph: {
+      title,
+      images: [`/results/${round}/share-image`],
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title,
+      images: [`/results/${round}/share-image`],
+    },
+  };
+}
 
 const TH = "label-caps text-muted font-normal text-left py-xs";
 const TD = "py-sm align-baseline";
@@ -250,9 +270,10 @@ export default async function RoundResultPage({
   const title = race?.raceName ?? qualifying?.raceName ?? `Round ${round}`;
   const state = getWeekendState(weekend, season.fetchedAtMs);
   const session = race ? weekend.sessions.find((item) => item.kind === "race") : weekend.sessions.find((item) => item.kind === "quali");
+  const provisional = isClassificationProvisional(weekend, season.fetchedAtMs);
   const recap = session
     ? race
-      ? buildRaceRecap({ result: race, session, nextSession: state.next, provisional: false })
+      ? buildRaceRecap({ result: race, session, nextSession: state.next, provisional })
       : buildQualifyingRecap({ result: qualifying, session, nextSession: state.next })
     : null;
 
@@ -260,6 +281,12 @@ export default async function RoundResultPage({
     <Container className="py-xxl">
       <SectionLabel>2026 · Round {round}</SectionLabel>
       <h1 className="text-display-lg text-ink mt-xs">{title}</h1>
+      {race && (
+        <div className="flex flex-wrap items-center gap-md mt-xs">
+          <ShareResultButton title={`${title} result`} />
+          <a href={`/results/${round}/share-image`} download className="text-caption text-muted underline underline-offset-4">Download result card</a>
+        </div>
+      )}
       {race && (
         <p className="text-body-md text-body mt-xs">{race.circuitName}</p>
       )}

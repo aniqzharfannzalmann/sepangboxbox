@@ -37,6 +37,7 @@ npm run dev          # http://localhost:3000
 | `npm run start` | Serve the production build |
 | `npm run lint` | ESLint |
 | `npm run verify:apis` | Contract test against the live upstream APIs |
+| `npm run verify:routing` | Assert no loading boundary sits above a `notFound()` route |
 | `npm run snapshot:season` | Regenerate the committed season schedule fallback |
 
 ## Environment
@@ -240,6 +241,54 @@ not linked from the app.
 Between them these cover every state the live page has: before the weekend,
 session running with and without rows, provisional, and finished.
 
+## Following drivers and teams
+
+The star on a standings row or a team page stores one thing in
+`localStorage`: the driver's or constructor's id. Home then reads the current
+standings from the server and shows the first three of each under **Your
+favourites**.
+
+Points and positions are deliberately *not* stored. If they were, a reader who
+followed Norris in July and came back in October would be shown July's points
+rendered as today's — a stale number that looks live is worse than no number.
+The ids are the only part that does not go out of date, so the ids are the only
+part kept. Corrupt or unreadable storage becomes an empty set rather than an
+error, and every page still renders with storage disabled entirely.
+
+The store is in
+[`src/lib/preferences/favorites.ts`](src/lib/preferences/favorites.ts) and is
+read through `useSyncExternalStore`, which requires a cached snapshot: return a
+freshly built object each call and React re-renders forever. That is why
+`readFavorites` memoises on the raw string.
+
+No account, no database, no sync between devices. It is one browser's list.
+
+## Result cards
+
+Any completed round renders a 1200x630 PNG at
+`/results/[round]/share-image` — the Open Graph image for the result page, and
+a download for anyone who wants to post it. Server-only, revalidating every
+five minutes, drawn with `next/og` from the same gateway the page uses.
+
+The card has three states, not two, and this is the whole point of it. Winner,
+podium, fastest lap and biggest mover each appear only when the data behind
+them is real: a classified numeric position, a valid lap time, a valid grid and
+finish. Anything missing prints as unavailable rather than being inferred.
+
+A round with no classification says **RESULT NOT PUBLISHED YET**, because a
+two-state card had to choose between provisional and official for a race that
+has not run, and chose official — Sepang's card announced an OFFICIAL
+CLASSIFICATION above an empty podium. Within an hour of the flag it says
+**PROVISIONAL**, on the same 60-minute window the live view uses;
+`isClassificationProvisional` in
+[`src/lib/f1/session-windows.ts`](src/lib/f1/session-windows.ts) is shared by
+both, so they cannot drift. A card is the one artefact that leaves the site —
+once it is in a WhatsApp group nobody sees the correction.
+
+The renderer is the only file allowed to write hex directly: Satori resolves no
+CSS variables and no Tailwind, so an `ImageResponse` tree is inline styles or
+nothing.
+
 ## Degrading gracefully
 
 The schedule is the most important thing this app shows during a race week, and
@@ -281,6 +330,16 @@ Every page must still render. None may be empty, and none may invent data.
   Suspense boundary makes Next stream the response, which commits HTTP 200
   before the body runs — silently turning a 404 into a 200. See the note in
   [`src/components/ui/Skeleton.tsx`](src/components/ui/Skeleton.tsx).
+
+  This rule was written down and then broken: a root `src/app/loading.tsx`
+  arrived with the navigation skeletons and blanketed the four routes that
+  call `notFound()`, so `/results/99`, `/circuits/nope`, `/teams/nope` and
+  `/live/preview/99` all answered 200 with a not-found body. Nothing failed —
+  not the types, not the build, not any verifier — because the page a reader
+  sees is still correct; only the status line is wrong, and only crawlers and
+  uptime checks read that. `npm run verify:routing` now walks the route tree
+  and fails if a boundary sits at or above a `notFound()` page. A prose rule
+  that a green build can violate is a rule that gets violated.
 - Run `npm run verify:apis` before shipping. It asserts the Sepang round still
   resolves to `sepang`, still starts 15:00 MYT, and still has no sprint — the
   upstream changes that would quietly break the schedule.

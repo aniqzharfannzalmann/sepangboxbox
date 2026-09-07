@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const read = (path) => readFileSync(`${root}/${path}`, "utf8");
 const checks = [
-  ["src/components/preferences/FavoriteButton.tsx", "localStorage"],
+  ["src/lib/preferences/favorites.ts", "localStorage"],
   ["src/components/preferences/LowDataToggle.tsx", "aria-pressed"],
   ["src/components/share/CopyLinkButton.tsx", "clipboard"],
   ["src/components/schedule/AddToCalendarButton.tsx", "text/calendar"],

@@ -35,6 +35,12 @@ jobs:
       - run: npm run verify:phase2
       - run: npm run verify:phase3
       - run: npm run verify:phase4
+      - run: npm run verify:phase5
+      - run: npm run verify:phase6
+
+      # A loading.tsx above a notFound() route turns 404 into 200. The build
+      # stays green when that happens, so it is asserted separately.
+      - run: npm run verify:routing
 
       # The check that matters most before a deploy: this is the same build
       # Vercel runs, so a failure here is a failure there.

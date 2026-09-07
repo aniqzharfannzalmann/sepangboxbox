@@ -41,7 +41,7 @@ function subscribe(onChange: () => void): () => void {
 }
 
 // Must return a cached value, not a fresh Date.now(), or React re-renders forever.
-const getSnapshot = (): number | null => (tick === 0 ? Date.now() : tick);
+const getSnapshot = (): number | null => (tick === 0 ? null : tick);
 const getServerSnapshot = (): number | null => null;
 
 function Unit({ value, label }: { value: string; label: string }) {

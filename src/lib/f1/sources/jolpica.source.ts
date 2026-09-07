@@ -4,7 +4,7 @@ import {
   getPitStops,
   getRaceWeekend,
 } from "../jolpica";
-import { getWeekendState } from "../session-windows";
+import { getWeekendState, isClassificationProvisional } from "../session-windows";
 import { lapTimeToSeconds } from "../time";
 import type {
   LiveSessionState,
@@ -40,14 +40,6 @@ const CAPABILITIES: SourceCapabilities = {
   raceControl: false,
   weather: false,
 };
-
-/**
- * How long after the flag a classification stays labelled provisional.
- * Stewards' decisions and post-race checks routinely land inside this window
- * (PRD 10.2), and a table that silently claims to be final while a penalty is
- * pending is worse than one that admits it is still settling.
- */
-const PROVISIONAL_MINUTES = 60;
 
 /**
  * Points the source at a specific round, and/or at a pretend clock.
@@ -92,18 +84,12 @@ export class JolpicaTimingSource implements LiveTimingSource {
     const state = getWeekendState(weekend.data, weekend.fetchedAtMs);
     const session = state.current ?? state.previous;
 
-    const endedMsAgo = session
-      ? weekend.fetchedAtMs - new Date(session.endsAtIso).getTime()
-      : Number.POSITIVE_INFINITY;
-
     return {
       weekend: weekend.data,
       session,
       next: state.next,
       status: state.status,
-      provisional:
-        state.status === "live" ||
-        (endedMsAgo >= 0 && endedMsAgo < PROVISIONAL_MINUTES * 60_000),
+      provisional: isClassificationProvisional(weekend.data, weekend.fetchedAtMs),
     };
   }
 
